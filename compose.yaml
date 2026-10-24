@@ -1,0 +1,7 @@
+name: documentos
+
+services:
+  web:
+    build: .
+    ports:
+      - "4173:80"

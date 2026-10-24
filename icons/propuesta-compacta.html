@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Propuestas de Reducción de Espacio - Acciones</title>
+  <style>
+    :root {
+      --bg: #faf7f2;
+      --card-bg: #ffffff;
+      --border: #e6e0d6;
+      --border-hover: #c4bcb0;
+      --text-muted: #8b857c;
+      --text-main: #332f2b;
+      --text-btn: #5a544e;
+      --btn-bg: #ffffff;
+      --btn-hover: #f3efe8;
+      --btn-active: #eae3d8;
+      --accent: #c25127;
+      --tooltip-bg: #1f1d1a;
+      --tooltip-text: #ffffff;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      padding: 40px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #2b2825;
+      text-align: center;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: -24px;
+      margin-bottom: 8px;
+    }
+    .comparativa {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 1100px;
+      width: 100%;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #eeeae4;
+      color: #6d665e;
+    }
+    .badge.green {
+      background: #e6f4ea;
+      color: #137333;
+    }
+    .badge.blue {
+      background: #e8f0fe;
+      color: #1a73e8;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #b38b4d;
+      text-transform: uppercase;
+    }
+    .hint {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* SVG Base */
+    svg.icon {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2.1;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    /* ================================================= */
+    /* TOOLTIPS ULTRA ELEGANTES CON CSS                 */
+    /* ================================================= */
+    [data-tooltip] {
+      position: relative;
+    }
+    [data-tooltip]::before {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background: var(--tooltip-bg);
+      color: var(--tooltip-text);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 9px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+      z-index: 100;
+    }
+    [data-tooltip]::after {
+      content: "";
+      position: absolute;
+      bottom: calc(100% + 3px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      border: 5px solid transparent;
+      border-top-color: var(--tooltip-bg);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+    }
+    [data-tooltip]:hover::before,
+    [data-tooltip]:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(0);
+    }
+    /* Posición inferior si se especifica */
+    [data-tooltip-pos="bottom"]::before {
+      bottom: auto;
+      top: calc(100% + 8px);
+      transform: translateX(-50%) translateY(-4px);
+    }
+    [data-tooltip-pos="bottom"]::after {
+      bottom: auto;
+      top: calc(100% + 3px);
+      border-top-color: transparent;
+      border-bottom-color: var(--tooltip-bg);
+      transform: translateX(-50%) translateY(-4px);
+    }
+    [data-tooltip-pos="bottom"]:hover::before,
+    [data-tooltip-pos="bottom"]:hover::after {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ================================================= */
+    /* DISEÑO ACTUAL (Para comparación)                  */
+    /* ================================================= */
+    .actual-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .btn-actual {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 38px;
+      padding: 0 10px;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-btn);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .btn-actual.full {
+      width: 100%;
+    }
+
+    /* ================================================= */
+    /* PROPUESTA 1: TOOLBAR SEGMENTADA EN 1 FILA         */
+    /* (Ahorra un 75% de espacio vertical)              */
+    /* ================================================= */
+    .toolbar-1fila {
+      display: inline-flex;
+      align-items: center;
+      background: #f7f4ed;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      gap: 2px;
+    }
+    .tool-btn {
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--text-btn);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .tool-btn:hover {
+      background: #ffffff;
+      color: #1a1918;
+      border-color: var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .tool-btn:active {
+      background: var(--btn-active);
+      transform: scale(0.96);
+    }
+    .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    /* ================================================= */
+    /* PROPUESTA 2: 2 FILAS AGRUPADAS POR FUNCIÓN        */
+    /* Fila 1: Movimiento (4 botones)                    */
+    /* Fila 2: Historial y Reset (3 botones)             */
+    /* ================================================= */
+    .toolbar-2filas {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-group {
+      display: flex;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .group-btn {
+      flex: 1;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border);
+      color: var(--text-btn);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .group-btn:last-child {
+      border-right: none;
+    }
+    .group-btn:hover {
+      background: var(--btn-hover);
+      color: #111;
+    }
+    .group-btn:active {
+      background: var(--btn-active);
+    }
+    .group-btn.restore {
+      color: #a34825;
+    }
+
+    /* ================================================= */
+    /* PROPUESTA 3: BOTONES COMPACTOS CON ICONO + ATRIBUTO */
+    /* Icono + Micro-etiqueta sutil                      */
+    /* ================================================= */
+    .grid-compact {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .compact-square {
+      aspect-ratio: 1;
+      height: 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-btn);
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .compact-square:hover {
+      background: var(--btn-hover);
+      border-color: var(--border-hover);
+      color: #111;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Propuestas de Optimización de Espacio</h1>
+  <p class="subtitle">Pasa el cursor por encima de los botones para ver los tooltips flotantes en acción</p>
+
+  <div class="comparativa">
+
+    <!-- ============================================== -->
+    <!-- CARD 1: PROPUESTA 1 (Recomendada - 1 Fila)     -->
+    <!-- ============================================== -->
+    <div class="card" style="flex: 1; min-width: 320px;">
+      <div class="card-header">
+        <span class="card-title">Propuesta 1 (Recomendada)</span>
+        <span class="badge green">Ahorra 75% altura</span>
+      </div>
+
+      <!-- Barra de herramientas en 1 sola fila con separadores lógicos -->
+      <div class="toolbar-1fila">
+        <!-- Grupo Movimiento -->
+        <button class="tool-btn" data-tooltip="Al inicio (Ir a la 1ª página)" aria-label="Al inicio">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="4" y1="5" x2="4" y2="19"/><polyline points="12 6 6 12 12 18"/><polyline points="19 6 13 12 19 18"/></svg>
+        </button>
+        <button class="tool-btn" data-tooltip="Antes (Mover 1 posición atrás)" aria-label="Antes">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="6" y1="5" x2="6" y2="19"/><polyline points="17 6 10 12 17 18"/></svg>
+        </button>
+        <button class="tool-btn" data-tooltip="Después (Mover 1 posición adelante)" aria-label="Después">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="7 6 14 12 7 18"/><line x1="18" y1="5" x2="18" y2="19"/></svg>
+        </button>
+        <button class="tool-btn" data-tooltip="Al final (Ir a la última página)" aria-label="Al final">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="5 6 11 12 5 18"/><polyline points="12 6 18 12 12 18"/><line x1="20" y1="5" x2="20" y2="19"/></svg>
+        </button>
+
+        <div class="divider"></div>
+
+        <!-- Grupo Deshacer / Rehacer -->
+        <button class="tool-btn" data-tooltip="Deshacer (Ctrl+Z)" aria-label="Deshacer">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+        </button>
+        <button class="tool-btn" data-tooltip="Rehacer (Ctrl+Y)" aria-label="Rehacer">
+          <svg class="icon" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg>
+        </button>
+
+        <div class="divider"></div>
+
+        <!-- Restaurar -->
+        <button class="tool-btn" data-tooltip="Restaurar orden original" aria-label="Restaurar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+      </div>
+
+      <div class="hint">
+        ✔ <strong>Estilo Toolbar (Office/Figma):</strong> Agrupa todas las acciones en una barra horizontal de 44px de alto.<br/>
+        ✔ Los separadores separan naturalmente <em>Posición | Historial | Restaurar</em>.<br/>
+        ✔ Tooltips contextuales con atajos de teclado.
+      </div>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- CARD 2: PROPUESTA 2 (2 Filas Agrupadas)        -->
+    <!-- ============================================== -->
+    <div class="card" style="flex: 1; min-width: 280px;">
+      <div class="card-header">
+        <span class="card-title">Propuesta 2 (Segmentada)</span>
+        <span class="badge blue">Ahorra 55% altura</span>
+      </div>
+
+      <div class="toolbar-2filas">
+        <!-- Fila 1: Movimiento (4 botones juntos) -->
+        <div class="btn-group">
+          <button class="group-btn" data-tooltip="Al inicio">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="4" y1="5" x2="4" y2="19"/><polyline points="12 6 6 12 12 18"/><polyline points="19 6 13 12 19 18"/></svg>
+          </button>
+          <button class="group-btn" data-tooltip="Antes">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="6" y1="5" x2="6" y2="19"/><polyline points="17 6 10 12 17 18"/></svg>
+          </button>
+          <button class="group-btn" data-tooltip="Después">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="7 6 14 12 7 18"/><line x1="18" y1="5" x2="18" y2="19"/></svg>
+          </button>
+          <button class="group-btn" data-tooltip="Al final">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="5 6 11 12 5 18"/><polyline points="12 6 18 12 12 18"/><line x1="20" y1="5" x2="20" y2="19"/></svg>
+          </button>
+        </div>
+
+        <!-- Fila 2: Edición (3 botones) -->
+        <div class="btn-group">
+          <button class="group-btn" data-tooltip="Deshacer (Ctrl+Z)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+          </button>
+          <button class="group-btn" data-tooltip="Rehacer (Ctrl+Y)">
+            <svg class="icon" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg>
+          </button>
+          <button class="group-btn restore" data-tooltip="Restaurar a estado original">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="hint">
+        ✔ <strong>Segmented Controls (iOS / macOS):</strong> Botones unidos en 2 bloques según el tipo de acción.<br/>
+        ✔ Ideal si tu panel lateral es más estrecho.
+      </div>
+    </div>
+
+
+    <!-- ============================================== -->
+    <!-- CARD 3: DISEÑO ACTUAL (Referencia visual)       -->
+    <!-- ============================================== -->
+    <div class="card" style="width: 260px; opacity: 0.85;">
+      <div class="card-header">
+        <span class="card-title">Diseño Actual</span>
+        <span class="badge">Ocupa 230px</span>
+      </div>
+
+      <div class="actual-grid">
+        <div class="btn-actual"><svg class="icon" viewBox="0 0 24 24"><line x1="4" y1="5" x2="4" y2="19"/><polyline points="12 6 6 12 12 18"/><polyline points="19 6 13 12 19 18"/></svg> Inicio</div>
+        <div class="btn-actual"><svg class="icon" viewBox="0 0 24 24"><line x1="6" y1="5" x2="6" y2="19"/><polyline points="17 6 10 12 17 18"/></svg> Antes</div>
+        <div class="btn-actual"><svg class="icon" viewBox="0 0 24 24"><polyline points="7 6 14 12 7 18"/><line x1="18" y1="5" x2="18" y2="19"/></svg> Después</div>
+        <div class="btn-actual"><svg class="icon" viewBox="0 0 24 24"><polyline points="5 6 11 12 5 18"/><polyline points="12 6 18 12 12 18"/><line x1="20" y1="5" x2="20" y2="19"/></svg> Final</div>
+        <div class="btn-actual"><svg class="icon" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg> Deshacer</div>
+        <div class="btn-actual"><svg class="icon" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg> Rehacer</div>
+      </div>
+      <div class="btn-actual full"><svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Restaurar</div>
+
+      <div class="hint">
+        Mucho texto redundante que ensancha y alarga el contenedor.
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
