@@ -8,6 +8,8 @@ Document♥s es un taller de PDF de uso local. El corazón del nombre sustituye 
 
 Los bytes del PDF no salen del navegador. No hay cuenta, ni servidor de archivos, ni telemetría. Docker solo sirve la aplicación ya construida.
 
+El tema claro u oscuro vive en `localStorage` con la clave `documentos-tema`. Cambia los colores de la interfaz. Las hojas, sus miniaturas y el papel de los archivos usan `--color-sheet` y no siguen el tema.
+
 Funciones listas: Ordenar páginas, Dividir, Unir. Aparecen en la barra y aún no hacen nada: Extraer páginas, Numerar páginas, Comprimir, Convertir, Proteger.
 
 ## Cómo correrla
@@ -18,7 +20,9 @@ Hace falta Docker. No instales Node en Windows para construir: el build corre de
 docker compose up --build -d
 ```
 
-Queda en http://localhost:4173. El proyecto de Compose se llama `documentos`, el servicio `web`, y publica `4173:80`.
+En el repositorio, `restart.bat` hace eso mismo: compila el código local y reinicia el Compose de desarrollo. No descarga una imagen publicada.
+
+Queda en http://localhost:4173. El proyecto de Compose se llama `documentos`, el servicio `web`, y publica `4173:8080`. Dentro del contenedor nginx escucha en 8080 y corre como el usuario `nginx`. `/salud` responde `ok`.
 
 Tras un cambio de interfaz, vuelve a construir y recarga el navegador. `npm run build` dentro de la imagen ejecuta `tsc --noEmit` y Vite. Antes pasa `node --experimental-strip-types scripts/check.ts`.
 
@@ -52,10 +56,12 @@ El historial guarda hasta 100 acciones, más el paso de origen. Ctrl+Z deshace y
 - Clic reemplaza la selección. Ctrl o Cmd y clic alterna. Mayús y clic marca el tramo.
 - Arrastrar una hoja marcada mueve todo el grupo y conserva el orden relativo. Soltar sobre la hoja tomada no hace nada.
 - Durante un arrastre múltiple, las otras hojas marcadas siguen ocupando su sitio (`visibility`, no `display: none`). Si se ocultan del flujo, el hueco se abre en el lugar equivocado.
-- El recuadro de selección solo nace en la columna central (`main#trabajo`). Por debajo de 4 px es un clic y limpia la selección, salvo con Ctrl o Mayús. Escape durante el gesto vuelve a la selección inicial.
+- El recuadro de selección solo nace en la columna central (`main#trabajo`), y solo en Ordenar páginas. Por debajo de 4 px es un clic y limpia la selección, salvo con Ctrl o Mayús. Escape durante el gesto vuelve a la selección inicial.
+- En Dividir, el centro tiene los atajos de partir y el riel. Una cuchilla parte el archivo en ese punto y se puede arrastrar. Cada tramo es un mazo con la primera y la última página; si no caben, se achican, pasan a dos filas y, con muchos tramos, a una ficha de inicio y fin (`src/components/SplitStage.tsx`). Escape quita todos los cortes.
 - Ctrl y la rueda solo cambian el tamaño de las hojas cuando el puntero está sobre esa columna.
 - Los botones de acción son solo icono. El nombre va en el tooltip. Un botón inactivo usa `aria-disabled`, no el atributo `disabled`, para que el tooltip siga apareciendo.
 - Importar desde Ordenar o Dividir sustituye el documento. Importar desde Unir agrega PDF.
+- El pie de la barra tiene la versión y el tema. La versión abre las notas en la ventana principal, con todas las publicaciones. Escape vuelve a la herramienta.
 
 ## Mapa corto
 
@@ -66,23 +72,35 @@ El historial guarda hasta 100 acciones, más el paso de origen. Ctrl+Z deshace y
 | `src/merge.ts` | Bloques de archivo y cuándo siguen separados |
 | `src/pdf/merge.ts` | Copiar páginas al PDF de salida |
 | `src/pdf/reorder.ts` | Leer, reordenar y extraer de un solo PDF |
-| `src/split.ts` | Cortes, cada N y cada hoja |
+| `src/split.ts` | Cortes del orden visible. Cada N y cada hoja siguen en el módulo, la pantalla usa la línea |
 | `src/components/PageGrid.tsx` | Hojas arrastrables |
 | `src/components/FileDeck.tsx` | Archivos cerrados de Unir |
 | `scripts/check.ts` | Pruebas del orden, la unión, el corte y el ZIP |
 
 `scripts/check.ts` importa módulos con extensión `.ts` porque lo ejecuta Node. El resto del código lo resuelve Vite.
 
-## Git
+## Git y publicación
 
-`.env` no se versiona. La plantilla es `.env.example`.
+El modelo está en `docs/FLUJO_PRODUCCION_LOCAL.md`. Aquí solo están los nombres de este proyecto.
+
+Subir código y publicar una versión son dos pasos distintos.
+
+| Archivo | Qué hace |
+| --- | --- |
+| `gitpush.bat` | Commit, si escribes mensaje, y envío de `HEAD` a `main`. No crea etiquetas. |
+| `gitpull.bat` | Baja `main` solo si puede avanzar en línea recta. |
+| `PublicarVersion.bat` | Exige `main` limpia, ya publicada, y envía únicamente el tag `v` + `VERSION`. |
+| `VERSION` | Única versión, `MAJOR.MINOR.PATCH`, sin `v`. |
+| `src/release-notes.json` | Notas que la interfaz muestra. La primera entrada tiene que ser esa versión. |
+
+`.env` no se versiona. La plantilla de desarrollo es `.env.example`.
 
 | Variable | Uso |
 | --- | --- |
-| `GITHUB_PAT` | Token personal. Solo lo leen los `.bat`. |
+| `GITHUB_PAT` | Token personal. Solo lo leen los `.bat` de este repositorio. |
 | `GITHUB_REPO` | URL HTTPS del repositorio, sin usuario ni token en la dirección. |
-| `GITHUB_BRANCH` | Rama. Si falta, los scripts usan `main`. |
+| `GITHUB_BRANCH` | Rama. Si falta, los scripts de subida usan `main`. |
 
-`gitpush.bat` pide un mensaje. Si escribes uno y hay cambios, hace el commit y envía `HEAD` a esa rama. Enter sin mensaje solo intenta el envío. `gitpull.bat` baja esa rama y solo avanza si puede hacerlo en línea recta.
+El equipo donde se usa la aplicación no recibe este repositorio. Recibe el ZIP de la Release: Compose con la imagen `ghcr.io/qargath/documentos:<versión>`, los scripts operativos y un checksum. `distribution/runtime/` es la lista cerrada de ese paquete. `scripts/build_runtime_release.py` sustituye `__DOCUMENTOS_VERSION__`, arma el ZIP y calcula el SHA-256. `python scripts/check_release.py` revisa esos contratos; acepta `--dry-run` en el generador cuando todavía no existe el tag.
 
-El repositorio local todavía no tiene commits. La primera subida necesita un mensaje en `gitpush.bat`.
+`distribution/preparar-equipo.bat` deja Docker listo. `distribution/preinstalar.bat` descarga la última Release estable y crea la carpeta. Allí, `install.bat` baja la imagen y arranca. `Actualizar.bat` reemplaza los archivos operativos y no reinicia. `restart.bat` de esa carpeta descarga las imágenes y, solo si eso termina, recrea los servicios. El `.env` real y los volúmenes no se reemplazan. El `.env` del cliente no es el de desarrollo: pide `GITHUB_TOKEN` y, si la imagen es privada, `GHCR_USERNAME` y `GHCR_TOKEN`.

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { PDFDocument } from 'pdf-lib'
 import { idsInside, marqueeSelection } from '../src/marquee.ts'
 import { moveGroup, placeGroup, stayingBeforeFirst } from '../src/order.ts'
-import { describeSplit, splitParts } from '../src/split.ts'
+import { describeSplit, equalCutIndexes, everyCutIndexes, splitParts } from '../src/split.ts'
 import { initialState, maxHistoryActions, reducer, type PageItem } from '../src/state.ts'
 import { describeMerge, intactFileOrder, moveFileBlock, pagesInFileOrder } from '../src/merge.ts'
 import { mergePdfs } from '../src/pdf/merge.ts'
@@ -112,6 +113,8 @@ assert.deepEqual(
 )
 assert.equal(splitParts(sheets, 'hojas', [], 2).length, 6)
 assert.equal(describeSplit('cortes', splitParts(sheets, 'cortes', ['2'], 2), 2), '2 PDF: pág. 1–2 y pág. 3–6.')
+assert.deepEqual(equalCutIndexes(42, 4), [9, 19, 29])
+assert.deepEqual(everyCutIndexes(42, 10), [9, 19, 29, 39])
 
 const pieces = await extractGroups(bytes, [
   [0, 2],
@@ -189,6 +192,14 @@ const joined = await mergePdfs(
   ],
 )
 assert.deepEqual(await widths(joined), [210, 300, 200])
+
+const version = readFileSync(new URL('../VERSION', import.meta.url), 'utf8').trim()
+const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
+const notes = JSON.parse(readFileSync(new URL('../src/release-notes.json', import.meta.url), 'utf8')) as { version: string }[]
+assert.match(version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/)
+assert.equal(packageJson.version, version, 'package.json no coincide con VERSION')
+assert.equal(notes[0]?.version, version, 'La nota visible no coincide con VERSION')
+assert.equal(notes.filter((note) => note.version === version).length, 1)
 
 console.log('orden de páginas ok')
 

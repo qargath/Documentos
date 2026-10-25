@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demostración · mazos de Dividir</title>
+  <style>
+    :root {
+      --paper: #f3efe6;
+      --stage: #faf7f2;
+      --card: #fffdf9;
+      --ink: #211c18;
+      --muted: #6f675e;
+      --line: #e3d9cc;
+      --stamp: #c4512c;
+      --gold: #b38b4d;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Segoe UI", sans-serif;
+    }
+    .demo-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 16px;
+      padding: 12px 18px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .demo-bar h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 650;
+    }
+    .demo-bar p {
+      margin: 0;
+      flex: 1 1 280px;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .controls label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #5a544e;
+    }
+    input[type="range"] { width: 140px; accent-color: var(--stamp); }
+    input[type="number"] {
+      width: 64px;
+      height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      text-align: center;
+      font: inherit;
+      font-weight: 650;
+    }
+    button.preset {
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #faf7f2;
+      color: #5a544e;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button.preset:hover { border-color: var(--stamp); color: var(--stamp); }
+    button.preset.on { background: var(--stamp); border-color: var(--stamp); color: #fff; }
+    .status {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--stamp);
+    }
+    .stage {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: min(920px, calc(100% - 32px));
+      margin: 16px auto;
+      padding: 16px 20px 14px;
+      overflow: hidden;
+      background: var(--stage);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+    }
+    .split-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      align-self: center;
+      padding: 6px 10px;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+    .split-actions span {
+      padding-right: 10px;
+      border-right: 1px solid var(--line);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .ghost {
+      height: 34px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #faf7f2;
+      color: #8b857c;
+      font-size: 12.5px;
+    }
+    .deck-zone {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .fit {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: max-content;
+    }
+    .row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 16px;
+    }
+    .row + .row { margin-top: 16px; }
+    .naipe { width: 240px; }
+    .fan { position: relative; height: 214px; }
+    .sheet {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 132px;
+      height: 196px;
+      margin-left: -66px;
+      overflow: hidden;
+      border: 1px solid #dcd5c9;
+      border-radius: 12px;
+      background: #f7f1e6;
+      box-shadow: 0 10px 18px rgba(60,40,20,0.12);
+      transform-origin: 50% 100%;
+    }
+    .sheet.face { background: #fff; }
+    .tag {
+      position: absolute;
+      top: 6px;
+      z-index: 2;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(33,28,24,0.9);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .tag.left { left: 6px; }
+    .tag.right { right: 6px; }
+    .page-art {
+      height: 100%;
+      padding: 28px 10px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .page-art strong {
+      font-family: Georgia, "Palatino Linotype", serif;
+      font-size: 28px;
+      line-height: 1;
+    }
+    .page-art i {
+      display: block;
+      height: 5px;
+      border-radius: 3px;
+      background: rgba(33,28,24,0.12);
+    }
+    .meta { margin-top: 8px; text-align: center; }
+    .meta b { display: block; font-size: 13px; }
+    .meta span { font-size: 11px; color: var(--muted); }
+    .chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .chip {
+      width: 104px;
+      height: 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      background: #fff;
+      border: 1px solid #dcd5c9;
+      border-radius: 10px;
+      box-shadow: 0 3px 8px rgba(60,40,20,0.06);
+    }
+    .chip-range {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      font-family: Georgia, "Palatino Linotype", serif;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .chip-range em {
+      font-style: normal;
+      font-family: "Segoe UI", sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--stamp);
+    }
+    .chip small { font-size: 10px; color: var(--muted); }
+    .ruler {
+      flex: none;
+      padding: 14px 18px 12px;
+      background: #fff;
+      border: 1.5px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    .ruler-head, .ruler-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .ruler-head { margin-bottom: 8px; }
+    .ruler-head strong {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #9c958c;
+    }
+    .track {
+      position: relative;
+      display: flex;
+      height: 48px;
+      overflow: hidden;
+      background: #f3ede2;
+      border: 1px solid #dcd4c6;
+      border-radius: 10px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .seg {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-right: 1px solid rgba(0,0,0,0.06);
+    }
+    .seg:nth-child(odd) { background: rgba(194,81,39,0.12); }
+    .seg:nth-child(even) { background: rgba(194,81,39,0.05); }
+    .seg b { font-size: 11px; }
+    .seg span { font-size: 9px; color: #8b8073; }
+    .cut {
+      position: absolute;
+      top: -5px;
+      bottom: -5px;
+      width: 2px;
+      background: var(--stamp);
+      transform: translateX(-50%);
+    }
+    .cut::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 12px;
+      height: 10px;
+      background: var(--stamp);
+      clip-path: polygon(0 0, 100% 0, 100% 65%, 50% 100%, 0 65%);
+      transform: translateX(-50%);
+    }
+    .ruler-foot { margin-top: 8px; }
+    .ruler-foot b { color: var(--stamp); }
+  </style>
+</head>
+<body>
+  <header class="demo-bar">
+    <h1>Mazos de Dividir</h1>
+    <p>El centro no se desplaza. Los mazos se achican en una fila. Si la hoja deja de leerse, pasan a dos filas. Si tampoco alcanzan, cada tramo es una ficha con el inicio y el fin.</p>
+    <div class="controls">
+      <button type="button" class="preset" data-parts="2" data-size="3">2 tramos</button>
+      <button type="button" class="preset" data-parts="5" data-size="10">5 tramos</button>
+      <button type="button" class="preset" data-parts="14" data-size="10">14 tramos</button>
+      <button type="button" class="preset" data-parts="100" data-size="10">100 tramos</button>
+      <label>Tramos <input id="parts" type="range" min="1" max="120" value="5" /></label>
+      <label>Páginas por tramo <input id="size" type="number" min="1" max="50" value="10" /></label>
+      <span class="status" id="status"></span>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="split-actions" aria-hidden="true">
+      <span>Partir en:</span>
+      <div class="ghost">A la mitad (½)</div>
+      <div class="ghost">En 3</div>
+      <div class="ghost">En 4</div>
+      <div class="ghost">Cada N págs...</div>
+    </div>
+    <div class="deck-zone" id="deck"></div>
+    <section class="ruler" id="ruler"></section>
+  </main>
+
+  <script>
+    const NAIPE_W = 240
+    const NAIPE_H = 262
+    const GAP = 16
+    const MIN_SCALE = 0.48
+
+    const partsInput = document.querySelector('#parts')
+    const sizeInput = document.querySelector('#size')
+    const deck = document.querySelector('#deck')
+    const ruler = document.querySelector('#ruler')
+    const status = document.querySelector('#status')
+
+    function hue(page) {
+      return (page * 47) % 360
+    }
+
+    function face(page, side) {
+      const color = `hsl(${hue(page)} 38% 38%)`
+      return `
+        <div class="sheet face" style="transform:rotate(${side === 'last' ? 12 : side === 'first' ? -12 : 0}deg);z-index:${side === 'last' ? 5 : 4}">
+          <span class="tag ${side === 'last' ? 'right' : 'left'}">pág. ${page}</span>
+          <div class="page-art" style="color:${color}">
+            <strong>${page}</strong>
+            <i style="width:78%"></i>
+            <i style="width:92%"></i>
+            <i style="width:64%"></i>
+          </div>
+        </div>`
+    }
+
+    function fan(part) {
+      const many = part.count > 2
+      const pair = part.count === 2
+      const backs = many
+        ? `
+          <div class="sheet" style="transform:rotate(-4deg);z-index:1"></div>
+          <div class="sheet" style="transform:rotate(0deg);z-index:2"></div>
+          <div class="sheet" style="transform:rotate(4deg);z-index:3"></div>`
+        : ''
+      let sheets
+      if (part.count <= 1) sheets = face(part.start, 'only').replace('rotate(-12deg)', 'rotate(0deg)')
+      else if (pair) {
+        sheets = `
+          ${face(part.start, 'first').replace('rotate(-12deg)', 'rotate(-7deg)').replace('z-index:4', 'z-index:1')}
+          ${face(part.end, 'last').replace('rotate(12deg)', 'rotate(7deg)').replace('z-index:5', 'z-index:2')}`
+      } else sheets = backs + face(part.start, 'first') + face(part.end, 'last')
+      const range = part.start === part.end ? `pág. ${part.start}` : `pág. ${part.start} – ${part.end}`
+      const count = part.count === 1 ? '1 página' : `${part.count} páginas`
+      return `
+        <article class="naipe">
+          <div class="fan">${sheets}</div>
+          <div class="meta"><b>${count}</b><span>${range}</span></div>
+        </article>`
+    }
+
+    function chip(part) {
+      const count = part.count === 1 ? '1 página' : `${part.count} páginas`
+      return `
+        <article class="chip">
+          <div class="chip-range"><span>${part.start}</span><em>–</em><span>${part.end}</span></div>
+          <small>${count}</small>
+        </article>`
+    }
+
+    function listParts(count, size) {
+      const parts = []
+      for (let index = 0; index < count; index += 1) {
+        const start = index * size + 1
+        parts.push({ start, end: start + size - 1, count: size })
+      }
+      return parts
+    }
+
+    function fitScale(width, height, availW, availH) {
+      if (width <= 0 || height <= 0) return 1
+      return Math.min(1, availW / width, availH / height)
+    }
+
+    function rowWidth(count) {
+      if (count <= 0) return 0
+      return count * NAIPE_W + (count - 1) * GAP
+    }
+
+    function choose(count, availW, availH) {
+      const one = fitScale(rowWidth(count), NAIPE_H, availW, availH)
+      if (count <= 1 || one >= MIN_SCALE) return { mode: 'una', scale: count <= 1 ? Math.min(1, one) : one }
+      const top = Math.ceil(count / 2)
+      const two = fitScale(rowWidth(top), NAIPE_H * 2 + GAP, availW, availH)
+      if (two >= MIN_SCALE) return { mode: 'dos', scale: two, top }
+      return { mode: 'fichas' }
+    }
+
+    function mount(node, scale) {
+      const fit = document.createElement('div')
+      fit.className = 'fit'
+      fit.style.transform = `translate(-50%, -50%) scale(${scale})`
+      fit.append(node)
+      deck.replaceChildren(fit)
+    }
+
+    function renderDecks(parts, plan) {
+      if (plan.mode === 'fichas') {
+        const availW = deck.clientWidth
+        const availH = deck.clientHeight
+        const chipW = 104
+        const chipH = 64
+        const gap = 8
+        let best = { cols: parts.length, scale: 0 }
+        for (let cols = 1; cols <= parts.length; cols += 1) {
+          const rows = Math.ceil(parts.length / cols)
+          const width = cols * chipW + (cols - 1) * gap
+          const height = rows * chipH + (rows - 1) * gap
+          const scale = fitScale(width, height, availW, availH)
+          if (scale > best.scale) best = { cols, scale }
+        }
+        const grid = document.createElement('div')
+        grid.className = 'chip-grid'
+        grid.style.width = `${best.cols * 104 + (best.cols - 1) * 8}px`
+        grid.innerHTML = parts.map(chip).join('')
+        mount(grid, best.scale)
+        return `Fichas de inicio y fin · ${Math.round(best.scale * 100)}%`
+      }
+
+      const board = document.createElement('div')
+      if (plan.mode === 'dos') {
+        const top = parts.slice(0, plan.top)
+        const bottom = parts.slice(plan.top)
+        board.innerHTML = `
+          <div class="row">${top.map(fan).join('')}</div>
+          <div class="row">${bottom.map(fan).join('')}</div>`
+        mount(board, plan.scale)
+        return `Naipes en dos filas · ${Math.round(plan.scale * 100)}%`
+      }
+      board.innerHTML = `<div class="row">${parts.map(fan).join('')}</div>`
+      mount(board, plan.scale)
+      return `Naipes en una fila · ${Math.round(plan.scale * 100)}%`
+    }
+
+    function renderRuler(parts) {
+      const total = parts.at(-1)?.end ?? 1
+      const showText = parts.length <= 8
+      const showCuts = parts.length <= 40
+      const segs = parts.map((part, index) => `
+        <div class="seg" style="flex:${part.count} 1 0">
+          ${showText ? `<b>Parte ${index + 1}</b><span>${part.count} págs (${part.start}-${part.end})</span>` : ''}
+        </div>`).join('')
+      const cuts = showCuts
+        ? parts.slice(0, -1).map((part) => `<i class="cut" style="left:${(part.end / total) * 100}%"></i>`).join('')
+        : ''
+      const label = parts.length === 1 ? '1 parte resultante' : `${parts.length} partes resultantes`
+      ruler.innerHTML = `
+        <div class="ruler-head">
+          <strong>Regla técnica de división (${total} páginas)</strong>
+          <span>Toca el riel para crear un corte · Toca la cuchilla para eliminarla</span>
+        </div>
+        <div class="track">${segs}${cuts}</div>
+        <div class="ruler-foot"><span>Página 1</span><b>${label}</b><span>Página ${total}</span></div>`
+    }
+
+    function render() {
+      const count = Math.min(120, Math.max(1, Math.floor(Number(partsInput.value)) || 1))
+      const size = Math.min(50, Math.max(1, Math.floor(Number(sizeInput.value)) || 1))
+      partsInput.value = String(count)
+      sizeInput.value = String(size)
+      const parts = listParts(count, size)
+      const plan = choose(count, deck.clientWidth, deck.clientHeight)
+      status.textContent = renderDecks(parts, plan)
+      renderRuler(parts)
+      document.querySelectorAll('.preset').forEach((button) => {
+        const on = Number(button.dataset.parts) === count && Number(button.dataset.size) === size
+        button.classList.toggle('on', on)
+      })
+    }
+
+    partsInput.addEventListener('input', render)
+    sizeInput.addEventListener('input', render)
+    document.querySelectorAll('.preset').forEach((button) => {
+      button.addEventListener('click', () => {
+        partsInput.value = button.dataset.parts
+        sizeInput.value = button.dataset.size
+        render()
+      })
+    })
+    new ResizeObserver(render).observe(deck)
+    render()
+  </script>
+</body>
+</html>

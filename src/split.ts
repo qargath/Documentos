@@ -29,6 +29,27 @@ export function splitParts<T extends { id: string }>(
   return parts.filter((part) => part.length > 0)
 }
 
+export function equalCutIndexes(pageCount: number, parts: number) {
+  if (parts < 2 || pageCount < 2) return []
+  const step = Math.floor(pageCount / parts)
+  if (step < 1) return []
+  const indexes: number[] = []
+  for (let part = 1; part < parts; part += 1) {
+    const after = part * step - 1
+    if (after >= pageCount - 1) break
+    indexes.push(after)
+  }
+  return indexes
+}
+
+export function everyCutIndexes(pageCount: number, size: number) {
+  const step = Math.max(1, Math.floor(size) || 1)
+  if (pageCount < 2 || step >= pageCount) return []
+  const indexes: number[] = []
+  for (let after = step - 1; after < pageCount - 1; after += step) indexes.push(after)
+  return indexes
+}
+
 export function summarizeParts(parts: { sourceIndex: number }[][]): PartSummary[] {
   return parts.map((part, index) => ({
     title: `Parte ${index + 1}`,
@@ -41,7 +62,7 @@ export function describeSplit(mode: SplitMode, parts: { sourceIndex: number }[][
   if (parts.length === 1) {
     if (mode === 'intervalo') return 'Con ese intervalo el PDF sigue siendo un solo archivo.'
     if (mode === 'hojas') return 'Este PDF tiene una sola página.'
-    return 'Todavía es un solo archivo. Marca un corte después de una página.'
+    return 'Todavía es un solo archivo. Toca el riel para marcar un corte.'
   }
   if (mode === 'hojas') return `Cada página será un archivo. Son ${parts.length}.`
   if (mode === 'intervalo') {

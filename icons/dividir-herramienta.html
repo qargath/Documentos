@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Herramienta Dividir PDF - Timeline de Precisión y Acciones Rápidas</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --card-bg: #ffffff;
+      --primary: #c25127;
+      --primary-hover: #a63f19;
+      --primary-subtle: #faece6;
+      --border: #e6e0d6;
+      --border-dark: #cfc6b8;
+      --text-main: #2b2825;
+      --text-muted: #8b857c;
+      --text-btn: #5a544e;
+      --track-bg: #ede7dc;
+      --segment-even: rgba(194, 81, 39, 0.08);
+      --segment-odd: rgba(194, 81, 39, 0.16);
+      --tooltip-bg: #1f1d1a;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      min-height: 100vh;
+    }
+
+    .header-bar {
+      text-align: center;
+      max-width: 800px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    p.lead {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* CONTENEDOR GENERAL DE LA APLICACIÓN */
+    .app-screen {
+      background: #faf7f2;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* TOP BAR */
+    .app-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 24px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #9c958c;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .brand svg.heart {
+      width: 14px;
+      height: 14px;
+      stroke: var(--primary);
+      stroke-width: 2.2;
+      fill: none;
+    }
+    .file-meta {
+      text-align: right;
+    }
+    .file-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .file-details {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* LAYOUT PRINCIPAL (Sidebar + Centro + Panel Derecho) */
+    .main-body {
+      display: grid;
+      grid-template-columns: 220px 1fr 280px;
+      min-height: 520px;
+    }
+
+    /* SIDEBAR IZQUIERDA */
+    .left-nav {
+      background: #ffffff;
+      border-right: 1px solid var(--border);
+      padding: 20px 14px;
+    }
+    .nav-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #9c958c;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      padding-left: 8px;
+    }
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #555;
+      text-decoration: none;
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+    .nav-link.active {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(194, 81, 39, 0.25);
+    }
+    .nav-link svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    /* ÁREA CENTRAL (Visualización de Mazos + Timeline de Herramienta) */
+    .center-stage {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 30px;
+      background: #faf7f2;
+      position: relative;
+    }
+
+    /* MAZO DE CARTAS / PÁGINAS FANEADAS */
+    .deck-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 12px;
+      flex: 1;
+      padding-bottom: 30px;
+      overflow-x: auto;
+    }
+    .card-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .card-stack:hover {
+      transform: translateY(-4px);
+    }
+    .card-fan {
+      position: relative;
+      width: 100px;
+      height: 140px;
+    }
+    .page-sheet {
+      position: absolute;
+      width: 90px;
+      height: 130px;
+      background: #ffffff;
+      border: 1px solid #dcd5c9;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .page-sheet.back {
+      transform: rotate(-6deg) translate(-6px, -4px);
+      z-index: 1;
+    }
+    .page-sheet.mid {
+      transform: rotate(3deg) translate(4px, -2px);
+      z-index: 2;
+    }
+    .page-sheet.front {
+      transform: rotate(-1deg);
+      z-index: 3;
+      border-color: #c8beaf;
+    }
+    .page-tag {
+      background: #2b2825;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 4px;
+      align-self: flex-start;
+    }
+    .mini-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding-top: 6px;
+    }
+    .skeleton-line {
+      height: 4px;
+      background: #eee;
+      border-radius: 2px;
+    }
+    .stack-meta {
+      margin-top: 10px;
+      text-align: center;
+    }
+    .stack-pages-count {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .stack-range {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ================================================= */
+    /* ACCIONES DE CORTE (Toolbar rápida de División)    */
+    /* ================================================= */
+    .split-actions-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 6px 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+      align-self: center;
+    }
+    .split-action-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #b38b4d;
+      text-transform: uppercase;
+      margin-right: 6px;
+      padding-right: 10px;
+      border-right: 1px solid var(--border);
+    }
+    .btn-split-preset {
+      height: 34px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #faf7f2;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-btn);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .btn-split-preset:hover {
+      background: #ffffff;
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 2px 6px rgba(194, 81, 39, 0.1);
+    }
+    .btn-split-preset svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+    }
+    .btn-split-preset.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .btn-split-preset.active svg {
+      stroke: #fff;
+    }
+    .btn-clear-cuts {
+      color: #b03a2e;
+      border-color: #f2d7d5;
+      background: #fdfefe;
+    }
+    .btn-clear-cuts:hover {
+      background: #fdedec;
+      border-color: #b03a2e;
+      color: #78281f;
+    }
+
+    /* ================================================= */
+    /* TIMELINE DE PRECISIÓN (HERRAMIENTA DE TRABAJO)    */
+    /* ================================================= */
+    .timeline-wrapper {
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    .timeline-header-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .timeline-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #9c958c;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Riel graduado / Cinta métrica de páginas */
+    .ruler-track {
+      position: relative;
+      height: 48px;
+      background: #f3ede2;
+      border: 1px solid #dcd4c6;
+      border-radius: 10px;
+      display: flex;
+      overflow: hidden;
+      cursor: crosshair;
+      user-select: none;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    /* Segmentos individuales dentro del riel */
+    .ruler-segment {
+      height: 100%;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid rgba(0,0,0,0.06);
+      transition: background 0.15s ease;
+      overflow: hidden;
+    }
+    .ruler-segment:nth-child(even) {
+      background: rgba(194, 81, 39, 0.05);
+    }
+    .ruler-segment:nth-child(odd) {
+      background: rgba(194, 81, 39, 0.12);
+    }
+    .ruler-segment:hover {
+      background: rgba(194, 81, 39, 0.22);
+    }
+    .segment-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #3e3730;
+      pointer-events: none;
+    }
+    .segment-sub {
+      font-size: 9px;
+      color: #8b8073;
+      pointer-events: none;
+    }
+
+    /* Marcas milimétricas de regla en la parte inferior del riel */
+    .ruler-ticks-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 4px;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+    .tick {
+      width: 1px;
+      height: 4px;
+      background: #73695d;
+    }
+    .tick.major {
+      height: 6px;
+      background: #332d26;
+    }
+
+    /* NODO / CUCHILLA DE CORTE (Work Tool Scissor Needle) */
+    .cutter-node {
+      position: absolute;
+      top: -6px;
+      bottom: -6px;
+      width: 16px;
+      transform: translateX(-50%);
+      z-index: 20;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.12s ease;
+    }
+    /* Cabezal de corte superior */
+    .cutter-head {
+      width: 16px;
+      height: 14px;
+      background: var(--primary);
+      clip-path: polygon(0 0, 100% 0, 100% 65%, 50% 100%, 0 65%);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s ease;
+    }
+    /* Línea vertical de la cuchilla que parte físicamente el riel */
+    .cutter-blade {
+      width: 2px;
+      flex: 1;
+      background: var(--primary);
+      box-shadow: 0 0 3px rgba(194, 81, 39, 0.4);
+    }
+    /* Pie inferior de la cuchilla */
+    .cutter-foot {
+      width: 8px;
+      height: 4px;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+
+    .cutter-node:hover .cutter-head {
+      transform: scale(1.2);
+      background: #e63946;
+    }
+    .cutter-node:hover .cutter-blade,
+    .cutter-node:hover .cutter-foot {
+      background: #e63946;
+    }
+
+    /* Tooltip contextual del corte */
+    .cutter-node::after {
+      content: attr(data-cut-info);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--tooltip-bg);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      z-index: 30;
+    }
+    .cutter-node:hover::after {
+      opacity: 1;
+    }
+
+    /* Guía de lectura y atajo inferior */
+    .timeline-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* PANEL DERECHO (Lista de Archivos Generados) */
+    .right-panel {
+      background: #ffffff;
+      border-left: 1px solid var(--border);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .right-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .parts-count {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .parts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      overflow-y: auto;
+      max-height: 420px;
+      margin-top: 12px;
+    }
+    .part-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #faf7f2;
+      transition: all 0.12s ease;
+      cursor: pointer;
+    }
+    .part-card:hover {
+      border-color: var(--primary);
+      background: #ffffff;
+      transform: translateX(2px);
+    }
+    .part-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .part-detail {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Modal / Popover para Dividir Personalizado */
+    .custom-modal {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ffffff;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      width: 290px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      z-index: 100;
+    }
+    .custom-modal.open {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .custom-modal h3 {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .input-number {
+      width: 60px;
+      height: 34px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .btn-apply {
+      height: 34px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <h1>Herramienta "Dividir": Presets Rápidos + Timeline Profesional</h1>
+    <p class="lead">Acciones directas para partir en partes iguales (salvando memorias de impresora) y un riel métrico de corte.</p>
+  </div>
+
+  <div class="app-screen">
+
+    <!-- BARRA SUPERIOR -->
+    <div class="app-topbar">
+      <div class="brand">
+        DOCUMENT
+        <svg class="heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        S
+      </div>
+
+      <div class="file-meta">
+        <div class="file-title">Pdf Oclusion</div>
+        <div class="file-details">42 páginas • 7.6 MB</div>
+      </div>
+    </div>
+
+    <!-- MAIN BODY -->
+    <div class="main-body">
+
+      <!-- 1. SIDEBAR IZQUIERDA -->
+      <div class="left-nav">
+        <div class="nav-label">Funciones</div>
+        <div class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><path d="M14 5h4a2 2 0 0 1 2 2v1"/><polyline points="18 3 20 5 18 7"/><path d="M10 19H6a2 2 0 0 1-2-2v-1"/><polyline points="6 21 4 19 6 17"/></svg>
+          <span>Ordenar páginas</span>
+        </div>
+
+        <div class="nav-link active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>
+          <span>Dividir</span>
+        </div>
+
+        <div class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4H5a2 2 0 0 0-2 2v10"/><rect x="8" y="8" width="13" height="13" rx="2"/><line x1="14.5" y1="11.5" x2="14.5" y2="17.5"/><line x1="11.5" y1="14.5" x2="17.5" y2="14.5"/></svg>
+          <span>Unir</span>
+        </div>
+
+        <div class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8l6 6v3"/><polyline points="14 2 14 8 20 8"/><path d="M10 16h11"/><polyline points="18 13 21 16 18 19"/></svg>
+          <span>Extraer páginas</span>
+        </div>
+      </div>
+
+      <!-- 2. ESCENARIO CENTRAL -->
+      <div class="center-stage">
+
+        <!-- BARRA FLOTANTE DE ACCIONES / PRESETS DE CORTE -->
+        <div class="split-actions-bar">
+          <span class="split-action-title">Partir en:</span>
+
+          <!-- A la mitad (½) -->
+          <button class="btn-split-preset" onclick="splitEqualParts(2)" title="Dividir en 2 partes iguales (21 págs c/u)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="8.5" height="16" rx="1.5"/><rect x="12.5" y="4" width="8.5" height="16" rx="1.5"/>
+            </svg>
+            <span>A la mitad (½)</span>
+          </button>
+
+          <!-- En 3 partes (⅓) -->
+          <button class="btn-split-preset" onclick="splitEqualParts(3)" title="Dividir en 3 partes iguales (14 págs c/u)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="5" height="16" rx="1.2"/><rect x="9.5" y="4" width="5" height="16" rx="1.2"/><rect x="16" y="4" width="5" height="16" rx="1.2"/>
+            </svg>
+            <span>En 3</span>
+          </button>
+
+          <!-- En 4 partes (¼) -->
+          <button class="btn-split-preset" onclick="splitEqualParts(4)" title="Dividir en 4 partes iguales (10-11 págs c/u)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2.5" y="4" width="3.8" height="16" rx="1"/><rect x="7.8" y="4" width="3.8" height="16" rx="1"/><rect x="13.1" y="4" width="3.8" height="16" rx="1"/><rect x="18.4" y="4" width="3.8" height="16" rx="1"/>
+            </svg>
+            <span>En 4</span>
+          </button>
+
+          <!-- Personalizado (N partes o cada X páginas) -->
+          <button class="btn-split-preset" onclick="openCustomModal()" title="Configurar corte personalizado">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+              <line x1="7" y1="5" x2="7" y2="9"/><line x1="11" y1="5" x2="11" y2="11"/><line x1="15" y1="5" x2="15" y2="9"/><line x1="19" y1="5" x2="19" y2="11"/>
+              <line x1="11" y1="14" x2="11" y2="19" stroke-dasharray="2 2"/>
+            </svg>
+            <span>Cada N págs...</span>
+          </button>
+
+          <!-- Quitar todos los cortes -->
+          <button class="btn-split-preset btn-clear-cuts" onclick="clearAllCuts()" title="Eliminar todos los cortes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8 8 12 12"/><path d="M14 14 19 19"/><line x1="3" y1="21" x2="21" y2="3"/>
+            </svg>
+            <span>Sin cortes</span>
+          </button>
+        </div>
+
+        <!-- MAZOS VISUALES FANEADOS (SE GENERAN DINÁMICAMENTE) -->
+        <div class="deck-container" id="deck-zone"></div>
+
+        <!-- TIMELINE DE TRABAJO (PRECISIÓN RULER TRACK) -->
+        <div class="timeline-wrapper">
+          <div class="timeline-header-info">
+            <div class="timeline-title">
+              <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18v12H3z"/><path d="M7 6v4m5-4v6m5-6v4"/></svg>
+              <span>Regla Técnica de División (42 Páginas)</span>
+            </div>
+            <div>Toca el riel para crear un corte • Toca la cuchilla para eliminarla</div>
+          </div>
+
+          <!-- Riel de corte con segmentos y marcas métricas -->
+          <div class="ruler-track" id="ruler" onclick="handleRulerClick(event)">
+            <!-- Los segmentos y los cutter-nodes se inyectan dinámicamente -->
+          </div>
+
+          <div class="timeline-footer">
+            <span>Página 1</span>
+            <span style="font-weight:600; color:var(--primary);" id="total-parts-label">6 partes resultantes</span>
+            <span>Página 42</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. PANEL DERECHO (Archivos resultantes) -->
+      <div class="right-panel">
+        <div class="right-header">
+          <div class="parts-count" id="right-parts-count">6 PDF</div>
+          <a href="#" style="font-size:12px; color:#b03a2e; text-decoration:none;" onclick="clearAllCuts()">Quitar cortes</a>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); line-height:1.4;">
+          Cada parte se descargará como un archivo independiente para tu impresora.
+        </div>
+
+        <div class="parts-list" id="parts-list-zone"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL DE CORTE PERSONALIZADO -->
+  <div class="custom-modal" id="custom-modal">
+    <h3>Corte Personalizado</h3>
+    <div style="font-size:12px; color:#666;">Elige cuántas páginas tendrá cada archivo como máximo:</div>
+    <div class="input-row">
+      <span>Dividir cada</span>
+      <input type="number" id="pages-per-part" class="input-number" value="10" min="1" max="41" />
+      <span>páginas</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-apply" onclick="applyCustomSplit()">Aplicar corte</button>
+      <button style="border:1px solid #ccc; background:#fff; border-radius:8px; padding:0 10px; cursor:pointer;" onclick="closeCustomModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <script>
+    const TOTAL_PAGES = 42;
+    // Cortes actuales (número de página donde termina cada bloque, ej: corte en pág 6 significa parte 1 es 1-6)
+    let cuts = [6, 13, 20, 28, 36]; // Produce 6 partes (igual que la foto del usuario)
+
+    function calculateParts() {
+      const parts = [];
+      let prev = 0;
+      const sortedCuts = [...cuts].sort((a,b) => a - b);
+
+      sortedCuts.forEach((cut, i) => {
+        parts.push({
+          index: i + 1,
+          start: prev + 1,
+          end: cut,
+          count: cut - prev
+        });
+        prev = cut;
+      });
+
+      if (prev < TOTAL_PAGES) {
+        parts.push({
+          index: parts.length + 1,
+          start: prev + 1,
+          end: TOTAL_PAGES,
+          count: TOTAL_PAGES - prev
+        });
+      }
+      return parts;
+    }
+
+    function renderUI() {
+      const parts = calculateParts();
+
+      // 1. Renderizar Mazos Faneados
+      const deckZone = document.getElementById('deck-zone');
+      deckZone.innerHTML = '';
+      parts.forEach(p => {
+        const stack = document.createElement('div');
+        stack.className = 'card-stack';
+        stack.innerHTML = `
+          <div class="card-fan">
+            <div class="page-sheet back"></div>
+            <div class="page-sheet mid"></div>
+            <div class="page-sheet front">
+              <span class="page-tag">pág. ${p.start}</span>
+              <div class="mini-content">
+                <div class="skeleton-line" style="width:70%;"></div>
+                <div class="skeleton-line" style="width:90%;"></div>
+                <div class="skeleton-line" style="width:60%;"></div>
+              </div>
+            </div>
+          </div>
+          <div class="stack-meta">
+            <div class="stack-pages-count">${p.count} páginas</div>
+            <div class="stack-range">pág. ${p.start} – ${p.end}</div>
+          </div>
+        `;
+        deckZone.appendChild(stack);
+      });
+
+      // 2. Renderizar Riel de Herramienta de Trabajo (Segments + Cutter Nodes)
+      const ruler = document.getElementById('ruler');
+      ruler.innerHTML = '';
+
+      // Tramos / Segmentos
+      parts.forEach(p => {
+        const seg = document.createElement('div');
+        seg.className = 'ruler-segment';
+        seg.style.flex = p.count;
+        seg.innerHTML = `
+          <span class="segment-label">Parte ${p.index}</span>
+          <span class="segment-sub">${p.count} págs (${p.start}-${p.end})</span>
+        `;
+        ruler.appendChild(seg);
+      });
+
+      // Cuchillas / Nodos de corte sobre el riel
+      cuts.forEach(cutPage => {
+        const percent = (cutPage / TOTAL_PAGES) * 100;
+        const node = document.createElement('div');
+        node.className = 'cutter-node';
+        node.style.left = `${percent}%`;
+        node.setAttribute('data-cut-info', `✂ Corte en pág. ${cutPage} (Clic para quitar)`);
+        node.onclick = (e) => {
+          e.stopPropagation();
+          removeCut(cutPage);
+        };
+        node.innerHTML = `
+          <div class="cutter-head"></div>
+          <div class="cutter-blade"></div>
+          <div class="cutter-foot"></div>
+        `;
+        ruler.appendChild(node);
+      });
+
+      // 3. Renderizar Lista Derecha
+      const rightList = document.getElementById('parts-list-zone');
+      rightList.innerHTML = '';
+      parts.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'part-card';
+        card.innerHTML = `
+          <div class="part-title">Parte ${p.index}</div>
+          <div class="part-detail">pág. ${p.start}–${p.end} • ${p.count} páginas</div>
+        `;
+        rightList.appendChild(card);
+      });
+
+      // Textos de conteo
+      document.getElementById('right-parts-count').innerText = `${parts.length} PDF`;
+      document.getElementById('total-parts-label').innerText = `${parts.length} partes resultantes`;
+    }
+
+    // Dividir en N partes iguales
+    function splitEqualParts(numParts) {
+      cuts = [];
+      const step = Math.floor(TOTAL_PAGES / numParts);
+      for (let i = 1; i < numParts; i++) {
+        cuts.push(i * step);
+      }
+      renderUI();
+    }
+
+    // Quitar todos los cortes
+    function clearAllCuts() {
+      cuts = [];
+      renderUI();
+    }
+
+    // Quitar un corte específico
+    function removeCut(page) {
+      cuts = cuts.filter(c => c !== page);
+      renderUI();
+    }
+
+    // Clic en la regla para agregar corte
+    function handleRulerClick(e) {
+      const rect = document.getElementById('ruler').getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = clickX / rect.width;
+      const clickedPage = Math.max(1, Math.min(TOTAL_PAGES - 1, Math.round(pct * TOTAL_PAGES)));
+
+      if (!cuts.includes(clickedPage)) {
+        cuts.push(clickedPage);
+        cuts.sort((a,b) => a - b);
+        renderUI();
+      }
+    }
+
+    // Modal personalizado
+    function openCustomModal() {
+      document.getElementById('custom-modal').classList.add('open');
+    }
+    function closeCustomModal() {
+      document.getElementById('custom-modal').classList.remove('open');
+    }
+    function applyCustomSplit() {
+      const pageSize = parseInt(document.getElementById('pages-per-part').value, 10);
+      if (pageSize > 0 && pageSize < TOTAL_PAGES) {
+        cuts = [];
+        let curr = pageSize;
+        while (curr < TOTAL_PAGES) {
+          cuts.push(curr);
+          curr += pageSize;
+        }
+        closeCustomModal();
+        renderUI();
+      }
+    }
+
+    // Inicializar
+    renderUI();
+  </script>
+
+</body>
+</html>

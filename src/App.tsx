@@ -2,9 +2,10 @@ import { useEffect, useReducer, useRef, useState, type PointerEvent } from 'reac
 import { DetailsPanel } from './components/DetailsPanel'
 import { FileDeck } from './components/FileDeck'
 import { PageGrid } from './components/PageGrid'
+import { ReleaseNotesView } from './components/ReleaseNotes'
 import { Sidebar, toolById, type ToolId } from './components/Sidebar'
 import { mergeTone } from './components/MergePanel'
-import { SplitGrid } from './components/SplitGrid'
+import { SplitStage } from './components/SplitStage'
 import { docReducer, docSignature, initialDoc, type DocFile, type DocPage } from './document'
 import { useMergeThumbs } from './hooks/useMergeThumbs'
 import { useThumbs } from './hooks/useThumbs'
@@ -14,7 +15,7 @@ import { moveGroup, placeGroup, stayingBeforeFirst } from './order'
 import { mergePdfs } from './pdf/merge'
 import { EncryptedPdfError, extractGroups, readPageCount } from './pdf/reorder'
 import { createSamplePdf } from './pdf/sample'
-import { describeSplit, splitParts, summarizeParts, type SplitMode } from './split'
+import { describeSplit, splitParts, summarizeParts } from './split'
 import { zipStore } from './zip'
 
 export default function App() {
@@ -42,18 +43,17 @@ export default function App() {
   const beforeFirst = stayingBeforeFirst(state.pages, state.selectedIds)
   const stayingCount = state.pages.length - state.selectedIds.length
   const [tool, setTool] = useState<ToolId>('ordenar')
-  const [splitMode, setSplitMode] = useState<SplitMode>('cortes')
+  const [notesOpen, setNotesOpen] = useState(false)
   const [cutAfter, setCutAfter] = useState<string[]>([])
-  const [splitEvery, setSplitEvery] = useState(2)
   const [splitResult, setSplitResult] = useState<SplitBundle | null>(null)
   const toolRef = useRef(tool)
-  const splitModeRef = useRef(splitMode)
+  const notesRef = useRef(notesOpen)
+  notesRef.current = notesOpen
   const cutRef = useRef(cutAfter)
   toolRef.current = tool
-  splitModeRef.current = splitMode
   cutRef.current = cutAfter
-  const parts = splitParts(state.pages, splitMode, cutAfter, splitEvery)
-  const splitSignature = splitKey(state.pages, splitMode, splitEvery, cutAfter)
+  const parts = splitParts(state.pages, 'cortes', cutAfter, 1)
+  const splitSignature = splitKey(state.pages, cutAfter)
   const splitReady = splitResult?.signature === splitSignature && splitResult.files.length > 1
   const splitLabels = parts.map((part) =>
     part.map((page) => ({
@@ -62,7 +62,7 @@ export default function App() {
   )
   const splitStatus = splitReady
     ? 'Los archivos están listos. Revísalos y descárgalos.'
-    : describeSplit(splitMode, splitLabels, splitEvery)
+    : describeSplit('cortes', splitLabels, 1)
   const splitting = tool === 'dividir'
   const merging = tool === 'unir'
   const manyFiles = state.files.length > 1
@@ -81,7 +81,7 @@ export default function App() {
       : fresh && manyFiles
         ? 'El PDF está listo. Revísalo y descárgalo.'
         : describeMerge(state.files.length, state.pages.length)
-  const { mainRef, cardWidth } = useSheetScale()
+  const { mainRef, cardWidth } = useSheetScale(!notesOpen)
   const canUndo = state.index > 0
   const canRedo = state.index < state.steps.length - 1
   const canMoveEarlier = merging ? selectedFileIndex > 0 : state.selectedIds.length > 0 && beforeFirst > 0
@@ -106,11 +106,15 @@ export default function App() {
       const target = event.target
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return
       if (event.key === 'Escape') {
+        if (notesRef.current) {
+          setNotesOpen(false)
+          return
+        }
         if (marqueeRef.current) {
           cancelMarqueeRef.current()
           return
         }
-        if (toolRef.current === 'dividir' && splitModeRef.current === 'cortes' && cutRef.current.length > 0) {
+        if (toolRef.current === 'dividir' && cutRef.current.length > 0) {
           publishCuts([])
           return
         }
@@ -379,6 +383,7 @@ export default function App() {
   }
 
   function chooseTool(next: ToolId) {
+    setNotesOpen(false)
     dispatch({ type: 'clear-selection' })
     setTool(next)
   }
@@ -388,9 +393,9 @@ export default function App() {
     if (filesRef.current.length === 0) return
     const pages = pagesRef.current
     const files = filesRef.current
-    const partList = splitParts(pages, splitMode, cutAfter, splitEvery)
+    const partList = splitParts(pages, 'cortes', cutAfter, 1)
     if (partList.length < 2) return
-    const signature = splitKey(pages, splitMode, splitEvery, cutAfter)
+    const signature = splitKey(pages, cutAfter)
     const title = fileTitle(files[0]?.name ?? 'documento')
     dispatch({ type: 'start', phase: 'building' })
     try {
@@ -458,8 +463,7 @@ export default function App() {
       dispatch({ type: 'clear-selection' })
       return
     }
-    const cutting = toolRef.current === 'dividir' && splitModeRef.current === 'cortes'
-    if (toolRef.current !== 'ordenar' && !cutting) return
+    if (toolRef.current !== 'ordenar') return
     if (!(target instanceof Element)) return
     if (target.closest('[data-page], button, a, input, textarea, select, label')) return
     if (pagesRef.current.length === 0) return
@@ -468,7 +472,7 @@ export default function App() {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      baseIds: (cutting ? cutRef.current : selectedRef.current).slice(),
+      baseIds: selectedRef.current.slice(),
       anchorId: anchorRef.current,
       additive: event.ctrlKey || event.metaKey || event.shiftKey,
       active: false,
@@ -495,11 +499,6 @@ export default function App() {
     }
     placeBand(rect)
     const hits = idsInside(pageBoxes(pagesRef.current), rect)
-    if (toolRef.current === 'dividir') {
-      const lastId = pagesRef.current.at(-1)?.id
-      publishCuts(marqueeSelection(drag.baseIds, hits.filter((id) => id !== lastId), drag.additive))
-      return
-    }
     const ids = marqueeSelection(drag.baseIds, hits, drag.additive)
     publishSelection(ids, drag.additive ? drag.anchorId : (ids[0] ?? null))
   }
@@ -516,10 +515,7 @@ export default function App() {
     } catch {
       // El puntero ya no está activo.
     }
-    if (!drag.active && !drag.additive) {
-      if (toolRef.current === 'dividir') publishCuts([])
-      else publishSelection([], null)
-    }
+    if (!drag.active && !drag.additive) publishSelection([], null)
   }
 
   return (
@@ -531,12 +527,18 @@ export default function App() {
       >
         Saltar al contenido
       </a>
-      <Sidebar tool={tool} onTool={chooseTool} />
+      <Sidebar tool={tool} notesOpen={notesOpen} onTool={chooseTool} onNotes={() => setNotesOpen(true)} />
 
+      {notesOpen ? (
+        <ReleaseNotesView />
+      ) : (
+      <>
       <main
         id="trabajo"
         ref={mainRef}
-        className="min-w-0 flex-1 overflow-y-auto px-6 py-6"
+        className={`min-w-0 flex-1 px-6 ${
+          splitting && state.pages.length > 0 ? 'flex min-h-0 flex-col overflow-hidden pt-6 pb-4' : 'overflow-y-auto py-6'
+        }`}
         onPointerDown={onShellPointerDown}
         onPointerMove={onShellPointerMove}
         onPointerUp={onShellPointerUp}
@@ -563,7 +565,7 @@ export default function App() {
               merging
                 ? 'Suelta los PDF. Aquí los ordenas enteros. En Ordenar páginas ves cada hoja.'
                 : splitting
-                  ? 'Vas a ver cada página. Marca dónde cortar y cada tramo se vuelve un PDF.'
+                  ? 'Abre el PDF. Luego lo partes a la mitad, en partes iguales, cada tantas páginas, o con el riel.'
                   : 'Vas a ver cada página. Marca una o varias, arrástralas y suéltalas en su nuevo lugar.'
             }
             heading={merging ? 'Suelta los PDF aquí' : undefined}
@@ -588,16 +590,14 @@ export default function App() {
             onReorder={reorderFiles}
           />
         ) : splitting ? (
-          <SplitGrid
+          <SplitStage
             pages={state.pages.map((page, index) => ({
               id: page.id,
               sourceIndex: manyFiles ? index : page.sourceIndex,
             }))}
             thumbs={thumbList}
-            cardWidth={cardWidth}
-            parts={parts}
-            cutting={splitMode === 'cortes'}
-            onToggleCut={(id) => publishCuts(cutRef.current.includes(id) ? cutRef.current.filter((item) => item !== id) : [...cutRef.current, id])}
+            cuts={cutAfter}
+            onCuts={publishCuts}
           />
         ) : (
           <section className="space-y-6">
@@ -680,18 +680,8 @@ export default function App() {
         }))}
         onShiftMergeFile={shiftFile}
         onRemoveMergeFile={removeFile}
-        splitMode={splitMode}
-        splitEvery={splitEvery}
         splitParts={summarizeParts(splitLabels)}
-        canClearCuts={splitMode === 'cortes' && cutAfter.length > 0}
-        onSplitMode={(mode) => {
-          setSplitMode(mode)
-          setSplitResult(null)
-        }}
-        onSplitEvery={(value) => {
-          setSplitEvery(value)
-          setSplitResult(null)
-        }}
+        canClearCuts={cutAfter.length > 0}
         onClearCuts={() => publishCuts([])}
         onPick={() => inputRef.current?.click()}
         onMoveStart={() => (merging ? moveSelectedFile(0) : moveSelection(0))}
@@ -705,6 +695,8 @@ export default function App() {
         onPrepare={() => void (splitting ? prepareSplit() : prepare())}
         onDownload={splitting ? downloadSplit : download}
       />
+      </>
+      )}
       <input
         ref={inputRef}
         type="file"
@@ -724,7 +716,7 @@ export default function App() {
 const SHEET_WIDTHS = [88, 104, 124, 148, 180, 220, 270, 340]
 const SHEET_NOTCH = 100
 
-function useSheetScale() {
+function useSheetScale(active: boolean) {
   const mainRef = useRef<HTMLElement>(null)
   const [cardWidth, setCardWidth] = useState(148)
   const indexRef = useRef(SHEET_WIDTHS.indexOf(148))
@@ -763,7 +755,7 @@ function useSheetScale() {
 
     node.addEventListener('wheel', onWheel, { passive: false })
     return () => node.removeEventListener('wheel', onWheel)
-  }, [])
+  }, [active])
 
   return { mainRef, cardWidth }
 }
@@ -807,7 +799,7 @@ function DropZone({
         </button>
         <button
           type="button"
-          className="rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+          className="rounded-xl border border-line bg-raise px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
           disabled={busy}
           onClick={onExample}
         >
@@ -883,8 +875,8 @@ interface SplitBundle {
   files: { name: string; bytes: Uint8Array }[]
 }
 
-function splitKey(pages: { fileId: string; sourceIndex: number }[], mode: SplitMode, every: number, cuts: string[]) {
-  return `${docSignature(pages)}|${mode}|${every}|${[...cuts].sort().join('.')}`
+function splitKey(pages: { fileId: string; sourceIndex: number }[], cuts: string[]) {
+  return `${docSignature(pages)}|${[...cuts].sort().join('.')}`
 }
 
 function saveBytes(bytes: Uint8Array, name: string) {

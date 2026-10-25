@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { PartSummary, SplitMode } from '../split'
+import type { PartSummary } from '../split'
 import type { HistoryStep, PageItem } from '../state'
 import { actionIcons, atajosIcon, Icon, originalIcon, toolIcons } from './icons'
 import { MergePanel } from './MergePanel'
@@ -34,12 +34,8 @@ interface DetailsPanelProps {
   mergeFiles: { id: string; name: string; pageCount: number }[]
   onShiftMergeFile: (id: string, toward: 'before' | 'after') => void
   onRemoveMergeFile: (id: string) => void
-  splitMode: SplitMode
-  splitEvery: number
   splitParts: PartSummary[]
   canClearCuts: boolean
-  onSplitMode: (mode: SplitMode) => void
-  onSplitEvery: (value: number) => void
   onClearCuts: () => void
   onPick: () => void
   onMoveStart: () => void
@@ -81,8 +77,8 @@ export function DetailsPanel(props: DetailsPanelProps) {
           )}
         </div>
         <div className="shrink-0">
-          <h2 className="text-[11px] font-semibold tracking-[0.12em] text-[#b38b4d] uppercase">Archivo y flujo</h2>
-          <div className="mt-1.5 inline-flex items-center gap-0.5 rounded-xl border-[1.5px] border-line bg-[#faf7f2] px-1.5 py-1">
+          <h2 className="text-[11px] font-semibold tracking-[0.12em] text-gold uppercase">Archivo y flujo</h2>
+          <div className="mt-1.5 inline-flex items-center gap-0.5 rounded-xl border-[1.5px] border-line bg-well px-1.5 py-1">
         <IconButton label="Importar" svg={actionIcons.importar} disabled={false} tip="below" onClick={props.onPick} />
         <IconButton
           label={props.preparing ? 'Armando…' : props.prepareLabel}
@@ -114,19 +110,15 @@ export function DetailsPanel(props: DetailsPanelProps) {
       {props.tool === 'dividir' ? (
         <SplitPanel
           pageCount={props.pageCount}
-          mode={props.splitMode}
-          every={props.splitEvery}
           parts={props.splitParts}
           canClear={props.canClearCuts}
-          onMode={props.onSplitMode}
-          onEvery={props.onSplitEvery}
           onClear={props.onClearCuts}
         />
       ) : props.tool === 'unir' ? (
         <div className="mt-4 flex min-h-0 flex-1 flex-col">
           <section className="shrink-0">
-            <h2 className="text-[11px] font-semibold tracking-[0.12em] text-[#b38b4d] uppercase">Acciones</h2>
-            <div className="mt-2 flex items-center justify-between rounded-xl border-[1.5px] border-line bg-[#faf7f2] px-1.5 py-1">
+            <h2 className="text-[11px] font-semibold tracking-[0.12em] text-gold uppercase">Acciones</h2>
+            <div className="mt-2 flex items-center justify-between rounded-xl border-[1.5px] border-line bg-well px-1.5 py-1">
               <IconButton label="Al inicio" svg={actionIcons.alInicio} disabled={!props.canMoveEarlier} onClick={props.onMoveStart} />
               <IconButton label="Antes" svg={actionIcons.antes} disabled={!props.canMoveEarlier} onClick={props.onMoveBefore} />
               <IconButton label="Después" svg={actionIcons.despues} disabled={!props.canMoveLater} onClick={props.onMoveAfter} />
@@ -155,8 +147,8 @@ export function DetailsPanel(props: DetailsPanelProps) {
       ) : current.ready ? (
         <div className="mt-4 flex min-h-0 flex-1 flex-col">
           <section className="shrink-0">
-            <h2 className="text-[11px] font-semibold tracking-[0.12em] text-[#b38b4d] uppercase">Acciones</h2>
-            <div className="mt-2 flex items-center justify-between rounded-xl border-[1.5px] border-line bg-[#faf7f2] px-1.5 py-1">
+            <h2 className="text-[11px] font-semibold tracking-[0.12em] text-gold uppercase">Acciones</h2>
+            <div className="mt-2 flex items-center justify-between rounded-xl border-[1.5px] border-line bg-well px-1.5 py-1">
               <IconButton label="Al inicio" svg={actionIcons.alInicio} disabled={!props.canMoveEarlier} onClick={props.onMoveStart} />
               <IconButton label="Antes" svg={actionIcons.antes} disabled={!props.canMoveEarlier} onClick={props.onMoveBefore} />
               <IconButton label="Después" svg={actionIcons.despues} disabled={!props.canMoveLater} onClick={props.onMoveAfter} />
@@ -201,7 +193,7 @@ export function DetailsPanel(props: DetailsPanelProps) {
           {tab === 'paginas' ? (
             <div className="mt-3 flex min-h-0 flex-1 flex-col" role="tabpanel">
               <div className="mb-2.5 flex shrink-0 items-center justify-between gap-3">
-                <h3 className="text-[11px] font-semibold tracking-[0.12em] text-[#b38b4d] uppercase">
+                <h3 className="text-[11px] font-semibold tracking-[0.12em] text-gold uppercase">
                   Nuevo orden{props.pageCount > 0 ? ` (${props.pageCount} págs.)` : ''}
                 </h3>
                 {props.changed ? (
@@ -214,7 +206,7 @@ export function DetailsPanel(props: DetailsPanelProps) {
                 <p className="text-sm text-muted">El orden se muestra al abrir un PDF.</p>
               ) : (
                 <ol
-                  className="grid min-h-0 flex-1 content-start grid-cols-7 gap-[5px] overflow-y-auto rounded-xl border border-line bg-white px-2 py-2.5"
+                  className="grid min-h-0 flex-1 content-start grid-cols-7 gap-[5px] overflow-y-auto rounded-xl border border-line bg-raise px-2 py-2.5"
                   aria-label="Nuevo orden del archivo"
                 >
                   {props.pages.map((page) => (
@@ -223,7 +215,7 @@ export function DetailsPanel(props: DetailsPanelProps) {
                       className={`grid h-8 place-items-center rounded-[7px] border text-[11px] font-medium ${
                         selected.has(page.id)
                           ? 'border-stamp bg-stamp font-bold text-white shadow-[0_2px_6px_rgba(194,81,39,0.3)]'
-                          : 'border-[#e0d9cd] bg-white text-[#4a453e]'
+                          : 'border-line bg-raise text-ink'
                       }`}
                     >
                       {page.sourceIndex + 1}
@@ -231,7 +223,7 @@ export function DetailsPanel(props: DetailsPanelProps) {
                   ))}
                 </ol>
               )}
-              <p className="mt-2.5 shrink-0 text-center text-[11px] text-[#a69f95]">
+              <p className="mt-2.5 shrink-0 text-center text-[11px] text-quiet">
                 Lectura: de izquierda a derecha y arriba hacia abajo
               </p>
             </div>
@@ -243,7 +235,7 @@ export function DetailsPanel(props: DetailsPanelProps) {
                 <p className="text-sm text-muted">El historial aparece al abrir un PDF.</p>
               ) : (
                 <ol
-                  className="flex min-h-0 flex-1 flex-col content-start gap-1.5 overflow-y-auto rounded-xl border-[1.5px] border-line bg-white p-2"
+                  className="flex min-h-0 flex-1 flex-col content-start gap-1.5 overflow-y-auto rounded-xl border-[1.5px] border-line bg-raise p-2"
                   aria-label="Historial del archivo"
                 >
                   {props.steps.map((step, stepIndex) => {
@@ -257,10 +249,10 @@ export function DetailsPanel(props: DetailsPanelProps) {
                           aria-current={here ? 'step' : undefined}
                           className={`flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-[12.5px] ${
                             here
-                              ? 'border-stamp bg-white font-semibold text-stamp shadow-[0_2px_8px_rgba(194,81,39,0.1)]'
+                              ? 'border-stamp bg-raise font-semibold text-stamp shadow-[0_2px_8px_rgba(194,81,39,0.1)]'
                               : later
-                                ? 'border-transparent text-muted hover:bg-[#faf7f2]'
-                                : 'border-transparent text-[#5a544e] hover:bg-[#faf7f2] hover:text-ink'
+                                ? 'border-transparent text-muted hover:bg-well'
+                                : 'border-transparent text-ink hover:bg-well hover:text-ink'
                           }`}
                           onClick={() => props.onGoto(stepIndex)}
                         >
@@ -271,11 +263,11 @@ export function DetailsPanel(props: DetailsPanelProps) {
                               </span>
                             ) : null}
                             {stepIndex === 0 && step.at == null ? (
-                              <Icon svg={originalIcon} className="mr-2 h-3.5 w-3.5 text-[#9c958c]" />
+                              <Icon svg={originalIcon} className="mr-2 h-3.5 w-3.5 text-quiet" />
                             ) : null}
                             <span className="truncate">{step.label}</span>
                           </span>
-                          <span className="shrink-0 font-mono text-[10px] text-[#9c958c]">{stepClock(step)}</span>
+                          <span className="shrink-0 font-mono text-[10px] text-quiet">{stepClock(step)}</span>
                         </button>
                       </li>
                     )
@@ -292,13 +284,13 @@ export function DetailsPanel(props: DetailsPanelProps) {
           ) : null}
 
           {tab === 'atajos' ? (
-            <div className="mt-3 min-h-0 flex-1 space-y-3.5 overflow-y-auto pr-1 text-xs text-[#403b35]" role="tabpanel">
-              <p className="rounded-[10px] border border-[#ebd9b8] bg-[#fbf7ee] px-3 py-2.5 text-[11px] leading-snug text-[#7a5e2c]">
+            <div className="mt-3 min-h-0 flex-1 space-y-3.5 overflow-y-auto pr-1 text-xs text-ink" role="tabpanel">
+              <p className="rounded-[10px] border border-note-line bg-note-bg px-3 py-2.5 text-[11px] leading-snug text-note">
                 {props.pageCount > 1 ? `${props.pageCount} páginas. ` : ''}
                 Arrastra en el vacío para marcar un grupo, o arrastra una página para moverla.
               </p>
               <div>
-                <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-[#9c958c] uppercase">Selección de páginas</p>
+                <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-quiet uppercase">Selección de páginas</p>
                 <Shortcut keys={['Clic']} text="Seleccionar una página" />
                 <Shortcut keys={['Ctrl', 'Clic']} text="Sumar o quitar selección" />
                 <Shortcut keys={['Mayús', 'Clic']} text="Marcar un tramo continuo" />
@@ -306,16 +298,16 @@ export function DetailsPanel(props: DetailsPanelProps) {
                 <Shortcut text="Deseleccionar todo" note="Clic en el centro" />
               </div>
               <div>
-                <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-[#9c958c] uppercase">Vista</p>
+                <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-quiet uppercase">Vista</p>
                 <Shortcut keys={['Ctrl', 'Rueda']} text="Tamaño de las hojas, en el centro" />
               </div>
               <div>
-                <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-[#9c958c] uppercase">Acciones y edición</p>
+                <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-quiet uppercase">Acciones y edición</p>
                 <Shortcut keys={['Ctrl', 'Z']} text="Deshacer última acción" />
                 <Shortcut keys={['Ctrl', 'Mayús', 'Z']} text="Rehacer acción" />
                 <Shortcut text="Restaurar al estado inicial" note="Botón Restaurar" />
               </div>
-              <p className="rounded-[10px] border border-[#ebd9b8] bg-[#fbf7ee] px-3 py-2.5 text-[11px] leading-snug text-[#7a5e2c]">
+              <p className="rounded-[10px] border border-note-line bg-note-bg px-3 py-2.5 text-[11px] leading-snug text-note">
                 Realiza los movimientos con las acciones o arrastrando las miniaturas. Cuando el orden sea el deseado,
                 presiona Preparar PDF y luego Descargar.
               </p>
@@ -360,7 +352,7 @@ function TabButton({
       {badge ? (
         <span
           className={`rounded-lg px-1.5 py-px text-[10px] font-bold ${
-            active ? 'bg-[#faece6] text-stamp' : 'bg-[#eee8de] text-[#6d665e]'
+            active ? 'bg-stamp/15 text-stamp' : 'bg-well text-quiet'
           }`}
         >
           {badge}
@@ -373,21 +365,21 @@ function TabButton({
 
 function Shortcut({ text, keys, note }: { text: string; keys?: string[]; note?: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-dashed border-[#eee7dc] py-1.5 last:border-b-0">
-      <span className="text-[#555]">{text}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-dashed border-line py-1.5 last:border-b-0">
+      <span className="text-ink">{text}</span>
       {keys ? (
         <span className="flex shrink-0 items-center gap-1">
           {keys.map((key, index) => (
             <span key={key} className="flex items-center gap-1">
               {index > 0 ? <span className="text-[10px] text-muted">+</span> : null}
-              <kbd className="rounded border border-[#d4cdc3] bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#333] shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
+              <kbd className="rounded border border-line bg-raise px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
                 {key}
               </kbd>
             </span>
           ))}
         </span>
       ) : (
-        <span className="text-[11px] text-[#888]">{note}</span>
+        <span className="text-[11px] text-muted">{note}</span>
       )}
     </div>
   )
@@ -426,7 +418,7 @@ function IconButton({
       ? 'border-stamp bg-stamp text-white shadow-[0_2px_6px_rgba(194,81,39,0.28)] hover:border-stamp hover:bg-stamp-dark hover:text-white'
       : tone === 'ready'
         ? 'border-[#34a853] text-[#137333] hover:border-[#34a853] hover:bg-[#e6f4ea] hover:text-[#137333]'
-        : 'text-[#5a544e] hover:border-line hover:bg-white hover:text-ink hover:shadow-sm'
+        : 'text-ink hover:border-line hover:bg-raise hover:text-ink hover:shadow-sm'
   return (
     <span className="group relative">
       <button
@@ -444,7 +436,7 @@ function IconButton({
       </button>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute ${tipClass} ${place} z-20 rounded-md bg-ink px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white opacity-0 shadow-[0_3px_10px_rgba(0,0,0,0.2)] transition group-hover:opacity-100 group-focus-within:opacity-100`}
+        className={`pointer-events-none absolute ${tipClass} ${place} z-20 rounded-md bg-[#1f1d1a] px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white opacity-0 shadow-[0_3px_10px_rgba(0,0,0,0.2)] transition group-hover:opacity-100 group-focus-within:opacity-100`}
       >
         {label}
         <span className={`absolute border-[5px] border-transparent ${arrowClass}`} />

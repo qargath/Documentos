@@ -12,6 +12,40 @@
   --color-stamp-dark: #9d3f22;
   --color-moss: #1c6b50;
   --color-moss-soft: #e7f4ee;
+  --color-sheet: #f7f4ee;
+  --color-raise: #ffffff;
+  --color-well: #faf7f2;
+  --color-gold: #b38b4d;
+  --color-quiet: #9c958c;
+  --color-track: #f3ede2;
+  --color-note: #7a5e2c;
+  --color-note-bg: #fbf7ee;
+  --color-note-line: #ebd9b8;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  --color-paper: #161310;
+  --color-ink: #f3efe6;
+  --color-muted: #b3a89c;
+  --color-line: #3d362f;
+  --color-card: #221e1a;
+  --color-stamp: #e08a62;
+  --color-stamp-dark: #c56a42;
+  --color-moss: #3d9a78;
+  --color-moss-soft: #17332a;
+  --color-raise: #2c2723;
+  --color-well: #2a2521;
+  --color-gold: #d4b483;
+  --color-quiet: #a3988c;
+  --color-track: #2a2520;
+  --color-note: #e4c98a;
+  --color-note-bg: #2c261c;
+  --color-note-line: #5c4a2e;
+  color-scheme: dark;
 }
 
 body {
@@ -24,6 +58,10 @@ body {
 
 ::selection {
   background: #f3cfc3;
+}
+
+html.dark ::selection {
+  background: #6a3a2c;
 }
 
 button {

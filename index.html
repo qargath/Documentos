@@ -8,6 +8,13 @@
       content="Reordena las páginas de un PDF en tu equipo, arrastrándolas."
     />
     <title>Document♥s</title>
+    <script>
+      try {
+        if (localStorage.getItem('documentos-tema') === 'dark') document.documentElement.classList.add('dark')
+      } catch (error) {
+        /* La preferencia se queda en claro. */
+      }
+    </script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c4512c'/%3E%3Cpath d='M9 8.5h9.2L23 13.2V23.5a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 8 23.5v-13A1.5 1.5 0 0 1 9.5 9Z' fill='none' stroke='%23fffdf9' stroke-width='1.6'/%3E%3Cpath d='M17.5 8.8V13H22' fill='none' stroke='%23fffdf9' stroke-width='1.6'/%3E%3C/svg%3E" />
   </head>
   <body>

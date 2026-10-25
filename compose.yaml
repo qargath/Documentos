@@ -3,5 +3,12 @@ name: documentos
 services:
   web:
     build: .
+    image: documentos-web:local
     ports:
-      - "4173:80"
+      - "4173:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/salud"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s

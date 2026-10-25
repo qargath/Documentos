@@ -314,7 +314,7 @@ function PageFace({
         ) : (
           <div className="h-full w-full animate-pulse bg-[#efe6da]" />
         )}
-        <span className="absolute top-2 left-2 rounded-md bg-ink/90 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+        <span className="absolute top-2 left-2 rounded-md bg-[#211c18]/90 px-1.5 py-0.5 text-[11px] font-semibold text-white">
           {badge ?? `pág. ${page.sourceIndex + 1}`}
         </span>
       </div>

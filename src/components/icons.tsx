@@ -17,6 +17,11 @@ import numerar from '../../icons/funciones/numerar-paginas.svg?raw'
 import ordenar from '../../icons/funciones/ordenar-paginas.svg?raw'
 import proteger from '../../icons/funciones/proteger.svg?raw'
 import unir from '../../icons/funciones/unir.svg?raw'
+import splitHalf from '../../icons/split-half.svg?raw'
+import splitThree from '../../icons/split-three.svg?raw'
+import splitFour from '../../icons/split-four.svg?raw'
+import splitCustom from '../../icons/split-custom.svg?raw'
+import splitClear from '../../icons/split-clear.svg?raw'
 
 export const toolIcons = {
   ordenar,
@@ -41,6 +46,14 @@ export const actionIcons = {
   preparar,
   descargar,
   historial,
+}
+
+export const splitIcons = {
+  half: splitHalf,
+  three: splitThree,
+  four: splitFour,
+  custom: splitCustom,
+  clear: splitClear,
 }
 
 export const originalIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>`

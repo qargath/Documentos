@@ -1,0 +1,39 @@
+[
+  {
+    "version": "0.1.2",
+    "date": "2026-10-25",
+    "title": "Dividir, unir y la ventana",
+    "added": [
+      "Dividir parte a la mitad, en 3, en 4 o cada tantas páginas. El riel marca cada corte.",
+      "Cada tramo se ve como un mazo, con la primera y la última página. Si no caben, pasan a dos filas y, si son muchos, a una ficha.",
+      "El tema claro u oscuro se cambia en el pie de la barra. El color de las hojas no cambia."
+    ],
+    "changed": [
+      "Unir ordena los archivos enteros. Si mezclas hojas de archivos distintos, queda un solo PDF y Dividir vuelve a separarlo.",
+      "Ordenar, Unir y Dividir trabajan el mismo documento, en tres columnas: funciones, documento y archivo.",
+      "Las notas de la versión se leen en la ventana principal, de la más nueva a la más antigua."
+    ]
+  },
+  {
+    "version": "0.1.1",
+    "date": "2026-10-24",
+    "title": "Notas de la versión",
+    "added": [
+      "Notas de la versión queda en la barra, de la más nueva a la más antigua.",
+      "Cada cosa que se publique se anota aquí."
+    ],
+    "changed": [
+      "La aplicación se puede instalar y actualizar en el equipo. La configuración se conserva."
+    ]
+  },
+  {
+    "version": "0.1.0",
+    "date": "2026-10-24",
+    "title": "Ordenar, unir y dividir",
+    "added": [
+      "Puedes ordenar las hojas de un PDF, unir varios archivos y dividir el resultado.",
+      "Ordenar, Unir y Dividir trabajan el mismo documento.",
+      "Si mezclas hojas de archivos distintos, pasan a ser un solo PDF. Dividir vuelve a separarlo."
+    ]
+  }
+]

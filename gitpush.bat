@@ -95,6 +95,7 @@ if errorlevel 1 (
 
 echo.
 echo [ÉXITO] Push completado en %GITHUB_REPO% sobre la rama %GITHUB_BRANCH%.
+echo Esto envía la rama. No crea una versión para los equipos.
 if defined DID_PUSHD popd
 pause
 exit /b 0

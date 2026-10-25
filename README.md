@@ -49,17 +49,27 @@ En Ordenar páginas verás las hojas de esos archivos, en este orden.
 
 Divide el orden que ves ahora.
 
-- **Cortes:** toca una hoja para cortar después de ella. La última no se puede marcar. El recuadro del centro marca varios cortes.
-- **Cada N:** un archivo cada tantas hojas. El número se escribe en el panel.
-- **Cada hoja:** un archivo por hoja.
+Arriba puedes partir a la mitad, en 3, en 4, o cada tantas páginas. **Sin cortes** los quita todos.
 
-Pulsa **Preparar los PDF** y después **Descargar ZIP**. Escape quita los cortes. Un clic en el vacío del centro también.
+Abajo está el riel. Tócalo para poner una cuchilla: ahí se corta el archivo. Otra cuchilla es otro corte. Toca una cuchilla para quitarla, o arrástrala si el corte va en otro lugar.
+
+Arriba, cada tramo es un mazo con la primera y la última página. Si no caben, se achican. Si la hoja deja de leerse, pasan a dos filas. Con muchos tramos, cada uno es una ficha con la página de inicio y la de fin.
+
+Pulsa **Preparar los PDF** y después **Descargar ZIP**. Escape quita los cortes.
 
 ## Deshacer
 
 Ctrl+Z deshace el último cambio. Ctrl+Mayús+Z lo rehace. Vale en Ordenar, Unir y Dividir, porque el historial es del documento.
 
 Escape quita la selección. En Dividir, si hay cortes, primero los quita.
+
+## Tema
+
+En el pie de la barra, la pestaña de la derecha cambia el tema. En claro muestra una luna y pasa a oscuro. En oscuro muestra un sol y vuelve a claro. El color de las hojas no cambia.
+
+## Notas de la versión
+
+En el pie de la barra, la pestaña de la izquierda muestra la versión. Al abrirla, la ventana principal lista todas las notas, de la más nueva a la más antigua.
 
 ## Lo que todavía no está
 

@@ -147,15 +147,15 @@ function FileFace({
   return (
     <div>
       <div className="relative h-40">
-        <div className="absolute inset-x-4 top-0 h-32 rounded-2xl border border-line bg-white shadow-sm" />
-        <div className="absolute inset-x-2 top-2 h-32 rounded-2xl border border-line bg-white shadow-sm" />
+        <div className="absolute inset-x-4 top-0 h-32 rounded-2xl border border-[#e3d9cc] bg-sheet shadow-sm" />
+        <div className="absolute inset-x-2 top-2 h-32 rounded-2xl border border-[#e3d9cc] bg-sheet shadow-sm" />
         <div
-          className={`absolute inset-x-0 top-4 flex h-32 flex-col justify-between rounded-2xl border bg-[#faf7f2] p-4 shadow-[0_10px_30px_rgba(60,40,20,0.05)] ${
-            selected ? 'border-stamp ring-2 ring-stamp' : 'border-line'
+          className={`absolute inset-x-0 top-4 flex h-32 flex-col justify-between rounded-2xl border bg-sheet p-4 shadow-[0_10px_30px_rgba(60,40,20,0.05)] ${
+            selected ? 'border-stamp ring-2 ring-stamp' : 'border-[#e3d9cc]'
           }`}
         >
           <span className={`h-3 w-3 rounded-full ${tone}`} aria-hidden="true" />
-          <span className="truncate font-display text-xl text-ink" title={file.name}>
+          <span className="truncate font-display text-xl text-[#211c18]" title={file.name}>
             {file.name}
           </span>
         </div>

@@ -1,0 +1,14 @@
+name: documentos
+
+services:
+  web:
+    image: ghcr.io/qargath/documentos:__DOCUMENTOS_VERSION__
+    ports:
+      - "4173:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/salud"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
