@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef, useState, type PointerEvent } from 'react'
 import { DetailsPanel } from './components/DetailsPanel'
+import { NumberStage, type NumberMode, type NumberStep } from './components/NumberStage'
 import { FileDeck } from './components/FileDeck'
 import { PageGrid } from './components/PageGrid'
 import { ReleaseNotesView } from './components/ReleaseNotes'
@@ -7,10 +8,13 @@ import { Sidebar, toolById, type ToolId } from './components/Sidebar'
 import { mergeTone } from './components/MergePanel'
 import { SplitStage } from './components/SplitStage'
 import { docReducer, docSignature, initialDoc, type DocFile, type DocPage } from './document'
+import { selectedInOrder } from './extract'
 import { useMergeThumbs } from './hooks/useMergeThumbs'
 import { useThumbs } from './hooks/useThumbs'
 import { idsInside, marqueeSelection, type Rect } from './marquee'
 import { describeMerge, filesInOrder, groupedPages, intactFileOrder, pagesInFileOrder, sameMergePages } from './merge'
+import { NUMBER_FACE, NUMBER_SIZE, planNumbers, type NumberFace, type NumberZone } from './numbering'
+import { stampNumbers } from './pdf/number'
 import { moveGroup, placeGroup, stayingBeforeFirst } from './order'
 import { mergePdfs } from './pdf/merge'
 import { EncryptedPdfError, extractGroups, readPageCount } from './pdf/reorder'
@@ -46,6 +50,18 @@ export default function App() {
   const [notesOpen, setNotesOpen] = useState(false)
   const [cutAfter, setCutAfter] = useState<string[]>([])
   const [splitResult, setSplitResult] = useState<SplitBundle | null>(null)
+  const [extractResult, setExtractResult] = useState<ExtractBundle | null>(null)
+  const [numberMode, setNumberMode] = useState<NumberMode | null>(null)
+  const [numberStep, setNumberStep] = useState<NumberStep>('modo')
+  const [numberFrom, setNumberFrom] = useState(1)
+  const [numberStart, setNumberStart] = useState(1)
+  const [numberZone, setNumberZone] = useState<NumberZone>('pie')
+  const [numberAlign, setNumberAlign] = useState(0.5)
+  const [numberSize, setNumberSize] = useState(NUMBER_SIZE)
+  const [numberFace, setNumberFace] = useState<NumberFace>(NUMBER_FACE)
+  const [numberExcluded, setNumberExcluded] = useState<string[]>([])
+  const [numberSample, setNumberSample] = useState<string | null>(null)
+  const [numberResult, setNumberResult] = useState<ExtractBundle | null>(null)
   const toolRef = useRef(tool)
   const notesRef = useRef(notesOpen)
   notesRef.current = notesOpen
@@ -65,6 +81,28 @@ export default function App() {
     : describeSplit('cortes', splitLabels, 1)
   const splitting = tool === 'dividir'
   const merging = tool === 'unir'
+  const extracting = tool === 'extraer'
+  const numbering = tool === 'numerar'
+  const numberFromPage = Math.min(Math.max(1, numberFrom), Math.max(state.pages.length, 1))
+  const numberAlignNow = numberMode === 'automatico' ? 0.5 : numberAlign
+  const numberSizeNow = numberMode === 'automatico' ? NUMBER_SIZE : numberSize
+  const numberFaceNow = numberMode === 'automatico' ? NUMBER_FACE : numberFace
+  const numberHidden = numberMode === 'asistido' ? numberExcluded : []
+  const numberSignature = numberKey(
+    state.pages,
+    numberMode,
+    numberFromPage,
+    numberStart,
+    numberZone,
+    numberAlignNow,
+    numberSizeNow,
+    numberFaceNow,
+    numberHidden,
+  )
+  const numberReady = numberMode != null && state.pages.length > 0 && numberResult?.signature === numberSignature
+  const extractPages = selectedInOrder(state.pages, state.selectedIds)
+  const extractSignature = extractPages.map((page) => page.id).join('|')
+  const extractReady = extractSignature !== '' && extractResult?.signature === extractSignature
   const manyFiles = state.files.length > 1
   const thumbList = state.pages.map((page) => docThumbs.urls[page.fileId]?.[page.sourceIndex] ?? '')
   const fileIndex = new Map(state.files.map((file, index) => [file.id, index]))
@@ -147,6 +185,8 @@ export default function App() {
       cutRef.current = []
       setCutAfter([])
       setSplitResult(null)
+      setExtractResult(null)
+      resetNumbering()
     } catch (error) {
       console.error(error)
       const message =
@@ -317,6 +357,8 @@ export default function App() {
       cutRef.current = []
       setCutAfter([])
       setSplitResult(null)
+      setExtractResult(null)
+      resetNumbering()
       dispatch({
         type: 'commit',
         files: [file],
@@ -415,6 +457,107 @@ export default function App() {
     }
   }
 
+  async function prepareExtract() {
+    if (filesRef.current.length === 0) return
+    const pages = selectedInOrder(pagesRef.current, selectedRef.current)
+    if (pages.length === 0) return
+    const signature = pages.map((page) => page.id).join('|')
+    dispatch({ type: 'start', phase: 'building' })
+    try {
+      const bytes = await mergePdfs(filesRef.current, pages)
+      setExtractResult({ signature, bytes })
+      dispatch({ type: 'idle' })
+    } catch (error) {
+      console.error(error)
+      dispatch({ type: 'fail', message: 'No pude extraer estas páginas.' })
+    }
+  }
+
+  function downloadExtract() {
+    if (!extractReady || !extractResult || state.files.length === 0) return
+    const base = fileTitle(state.files[0]?.name ?? 'documento')
+    saveBytes(extractResult.bytes, `${base}-extraido.pdf`)
+  }
+
+  function resetNumbering() {
+    setNumberMode(null)
+    setNumberStep('modo')
+    setNumberFrom(1)
+    setNumberStart(1)
+    setNumberZone('pie')
+    setNumberAlign(0.5)
+    setNumberSize(NUMBER_SIZE)
+    setNumberFace(NUMBER_FACE)
+    setNumberExcluded([])
+    setNumberSample(null)
+    setNumberResult(null)
+  }
+
+  function chooseNumberMode(mode: NumberMode) {
+    setNumberMode(mode)
+    setNumberStep('config')
+    if (mode === 'automatico') {
+      setNumberZone('pie')
+      setNumberAlign(0.5)
+      setNumberSize(NUMBER_SIZE)
+      setNumberFace(NUMBER_FACE)
+      setNumberExcluded([])
+    }
+  }
+
+  function goNumberStep(next: NumberStep) {
+    if (next === 'insercion') {
+      const hidden = new Set(
+        pagesRef.current.flatMap((page, index) => (numberExcluded.includes(page.id) ? [index] : [])),
+      )
+      const marks = planNumbers(pagesRef.current.length, numberFromPage, numberStart, hidden)
+      const pool = pagesRef.current.filter((_, index) => marks[index]?.consumed != null)
+      const source = pool.length > 0 ? pool : pagesRef.current
+      if (!source.some((page) => page.id === numberSample)) {
+        const pick = source[Math.floor(Math.random() * source.length)]
+        setNumberSample(pick?.id ?? null)
+      }
+    }
+    setNumberStep(next)
+  }
+
+  function toggleNumberPage(id: string) {
+    setNumberExcluded((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
+  }
+
+  async function prepareNumber() {
+    if (!numberMode || filesRef.current.length === 0 || pagesRef.current.length === 0) return
+    const pages = pagesRef.current
+    const fromPage = Math.min(Math.max(1, numberFrom), Math.max(pages.length, 1))
+    const align = numberMode === 'automatico' ? 0.5 : numberAlign
+    const size = numberMode === 'automatico' ? NUMBER_SIZE : numberSize
+    const face = numberMode === 'automatico' ? NUMBER_FACE : numberFace
+    const excluded = numberMode === 'asistido' ? numberExcluded : []
+    const hidden = new Set(pages.flatMap((page, index) => (excluded.includes(page.id) ? [index] : [])))
+    const marks = planNumbers(pages.length, fromPage, numberStart, hidden)
+    const signature = numberKey(pages, numberMode, fromPage, numberStart, numberZone, align, size, face, excluded)
+    dispatch({ type: 'start', phase: 'building' })
+    try {
+      const merged = await mergePdfs(filesRef.current, pages)
+      const bytes = await stampNumbers(
+        merged,
+        marks.map((mark) => ({ text: mark.shown == null ? null : String(mark.shown) })),
+        { zone: numberZone, align, size, face },
+      )
+      setNumberResult({ signature, bytes })
+      dispatch({ type: 'idle' })
+    } catch (error) {
+      console.error(error)
+      dispatch({ type: 'fail', message: 'No pude numerar esta copia.' })
+    }
+  }
+
+  function downloadNumber() {
+    if (!numberReady || !numberResult || state.files.length === 0) return
+    const base = fileTitle(state.files[0]?.name ?? 'documento')
+    saveBytes(numberResult.bytes, `${base}-numerado.pdf`)
+  }
+
   function downloadSplit() {
     if (state.files.length === 0 || !splitReady || !splitResult) return
     const title = fileTitle(state.files[0]?.name ?? 'documento')
@@ -463,7 +606,7 @@ export default function App() {
       dispatch({ type: 'clear-selection' })
       return
     }
-    if (toolRef.current !== 'ordenar') return
+    if (toolRef.current !== 'ordenar' && toolRef.current !== 'extraer') return
     if (!(target instanceof Element)) return
     if (target.closest('[data-page], button, a, input, textarea, select, label')) return
     if (pagesRef.current.length === 0) return
@@ -555,7 +698,7 @@ export default function App() {
           void onFiles(dropped)
         }}
       >
-        {tool !== 'ordenar' && tool !== 'dividir' && tool !== 'unir' ? (
+        {tool !== 'ordenar' && tool !== 'dividir' && tool !== 'unir' && tool !== 'extraer' && tool !== 'numerar' ? (
           <ToolSoon label={toolById(tool).label} />
         ) : state.pages.length === 0 ? (
           <DropZone
@@ -566,7 +709,11 @@ export default function App() {
                 ? 'Suelta los PDF. Aquí los ordenas enteros. En Ordenar páginas ves cada hoja.'
                 : splitting
                   ? 'Abre el PDF. Luego lo partes a la mitad, en partes iguales, cada tantas páginas, o con el riel.'
-                  : 'Vas a ver cada página. Marca una o varias, arrástralas y suéltalas en su nuevo lugar.'
+                  : extracting
+                    ? 'Abre el PDF. Marca las páginas con un clic o con un recuadro y expórtalas. El archivo original no cambia.'
+                    : numbering
+                      ? 'Abre el PDF. Eliges automático o asistido, y la descarga es una copia.'
+                      : 'Vas a ver cada página. Marca una o varias, arrástralas y suéltalas en su nuevo lugar.'
             }
             heading={merging ? 'Suelta los PDF aquí' : undefined}
             onPick={() => inputRef.current?.click()}
@@ -588,6 +735,31 @@ export default function App() {
             selectedId={selectedFileIndex >= 0 ? (state.selectedIds[0] ?? null) : null}
             onSelect={(id) => dispatch({ type: 'select', id, mode: 'replace' })}
             onReorder={reorderFiles}
+          />
+        ) : numbering ? (
+          <NumberStage
+            pages={state.pages}
+            thumbs={thumbList}
+            cardWidth={cardWidth}
+            step={numberStep}
+            mode={numberMode}
+            fromPage={numberFromPage}
+            startAt={numberStart}
+            zone={numberZone}
+            align={numberAlignNow}
+            size={numberSizeNow}
+            face={numberFaceNow}
+            excluded={numberHidden}
+            sampleId={numberSample}
+            onMode={chooseNumberMode}
+            onFromPage={setNumberFrom}
+            onStartAt={setNumberStart}
+            onZone={setNumberZone}
+            onAlign={setNumberAlign}
+            onSize={setNumberSize}
+            onFace={setNumberFace}
+            onToggle={toggleNumberPage}
+            onStep={goNumberStep}
           />
         ) : splitting ? (
           <SplitStage
@@ -612,9 +784,10 @@ export default function App() {
               selectedIds={state.selectedIds}
               onSelect={(id, mode) => dispatch({ type: 'select', id, mode })}
               onReorder={moveDragged}
+              movable={!extracting}
             />
 
-            {fresh && state.result ? (
+            {!extracting && fresh && state.result ? (
               <section className="rounded-3xl border border-line bg-card p-5">
                 <h3 className="font-display text-xl">Así quedó el archivo</h3>
                 <p className="mt-1 text-sm text-muted">
@@ -652,7 +825,19 @@ export default function App() {
         fileName={state.files.length > 1 ? `${state.files.length} archivos` : (state.files[0]?.name ?? null)}
         pageCount={state.pages.length}
         byteLength={state.files.reduce((total, file) => total + file.bytes.byteLength, 0)}
-        status={state.phase === 'loading' ? 'Abriendo…' : merging ? joinStatus : splitting ? splitStatus : orderStatus}
+        status={
+          state.phase === 'loading'
+            ? 'Abriendo…'
+            : merging
+              ? joinStatus
+              : splitting
+                ? splitStatus
+                : extracting
+                  ? extractStatus(extractPages.length, extractReady)
+                  : numbering
+                    ? numberStatus(numberMode, numberStep, numberFromPage, numberStart, numberFaceNow, numberReady, state.pages.length)
+                    : orderStatus
+        }
         error={state.error}
         thumbError={docThumbs.error}
         changed={changed}
@@ -666,9 +851,27 @@ export default function App() {
         canRedo={canRedo}
         canPrepare={
           state.phase === 'idle' &&
-          (merging ? state.files.length > 1 && state.pages.length > 0 : splitting ? parts.length > 1 : state.pages.length > 0)
+          (numbering
+            ? state.pages.length > 0 &&
+              ((numberMode === 'automatico' && numberStep === 'config') ||
+                (numberMode === 'asistido' && numberStep === 'previa'))
+            : extracting
+            ? extractPages.length > 0
+            : merging
+              ? state.files.length > 1 && state.pages.length > 0
+              : splitting
+                ? parts.length > 1
+                : state.pages.length > 0)
         }
-        canDownload={splitting ? splitReady : fresh && state.result !== null && (merging ? state.files.length > 1 : true)}
+        canDownload={
+          numbering
+            ? numberReady
+            : extracting
+            ? extractReady
+            : splitting
+              ? splitReady
+              : fresh && state.result !== null && (merging ? state.files.length > 1 : true)
+        }
         preparing={state.phase === 'building'}
         prepareLabel={splitting ? 'Preparar los PDF' : 'Preparar PDF'}
         downloadLabel={splitting && parts.length > 1 ? 'Descargar ZIP' : 'Descargar'}
@@ -692,8 +895,10 @@ export default function App() {
         onRedo={() => dispatch({ type: 'redo' })}
         onRestore={() => dispatch({ type: 'restore' })}
         onGoto={(index) => dispatch({ type: 'goto', index })}
-        onPrepare={() => void (splitting ? prepareSplit() : prepare())}
-        onDownload={splitting ? downloadSplit : download}
+        onPrepare={() =>
+          void (numbering ? prepareNumber() : extracting ? prepareExtract() : splitting ? prepareSplit() : prepare())
+        }
+        onDownload={numbering ? downloadNumber : extracting ? downloadExtract : splitting ? downloadSplit : download}
       />
       </>
       )}
@@ -873,6 +1078,59 @@ function joinedName(files: { name: string }[]) {
 interface SplitBundle {
   signature: string
   files: { name: string; bytes: Uint8Array }[]
+}
+
+interface ExtractBundle {
+  signature: string
+  bytes: Uint8Array
+}
+
+function numberKey(
+  pages: { fileId: string; sourceIndex: number }[],
+  mode: NumberMode | null,
+  fromPage: number,
+  startAt: number,
+  zone: NumberZone,
+  align: number,
+  size: number,
+  face: NumberFace,
+  excluded: string[],
+) {
+  return [docSignature(pages), mode, fromPage, startAt, zone, align, size, face, excluded.join(',')].join('#')
+}
+
+function numberStatus(
+  mode: NumberMode | null,
+  step: NumberStep,
+  fromPage: number,
+  startAt: number,
+  face: NumberFace,
+  ready: boolean,
+  pageCount: number,
+) {
+  if (pageCount === 0) return 'Abre un PDF. La descarga será una copia.'
+  const exporting =
+    (mode === 'automatico' && step === 'config') || (mode === 'asistido' && step === 'previa')
+  if (ready && exporting) return 'La copia está lista. El original no cambia.'
+  if (mode == null || step === 'modo') return 'Elige automático o asistido.'
+  if (mode === 'automatico') {
+    return `El número va en todas las páginas, desde la ${fromPage}, empezando en ${startAt}. Arial, 12 pt.`
+  }
+  if (step === 'config') return `La serie empieza en la página ${fromPage}, con el número ${startAt}.`
+  if (step === 'seleccion') return 'Quita el número donde no quieras verlo. Esa página igual cuenta.'
+  if (step === 'insercion') return `Acomoda el número en la cabecera, el pie o un borde. ${face}.`
+  return 'Revisa los números en cada página. Luego prepara la copia.'
+}
+
+function extractStatus(count: number, ready: boolean) {
+  if (ready) {
+    return count === 1
+      ? 'El PDF está listo. Tiene 1 página. Revísalo y descárgalo.'
+      : `El PDF está listo. Tiene ${count} páginas. Revísalo y descárgalo.`
+  }
+  if (count === 0) return 'Marca las páginas que quieres extraer. El archivo original no cambia.'
+  if (count === 1) return 'Hay 1 página marcada. Preparar arma un PDF solo con ella.'
+  return `Hay ${count} páginas marcadas. Preparar arma un PDF solo con ellas, en este orden.`
 }
 
 function splitKey(pages: { fileId: string; sourceIndex: number }[], cuts: string[]) {

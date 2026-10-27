@@ -14,7 +14,7 @@ Los botones de la derecha solo muestran un icono. El nombre aparece al pasar el 
 
 ## Un mismo documento
 
-Ordenar, Unir y Dividir trabajan el mismo documento. Lo que cambias en una función se ve en las otras.
+Ordenar, Unir, Dividir y Extraer trabajan el mismo documento. Lo que cambias en una función se ve en las otras.
 
 **Unir** muestra cada PDF cerrado. Arrástralos para decidir el orden: por ejemplo, archivo 2, luego archivo 4, luego archivo 3. Aquí no se ven las hojas sueltas. Hacen falta al menos dos PDF para preparar la unión y descargarla.
 
@@ -57,6 +57,26 @@ Arriba, cada tramo es un mazo con la primera y la última página. Si no caben, 
 
 Pulsa **Preparar los PDF** y después **Descargar ZIP**. Escape quita los cortes.
 
+## Extraer páginas
+
+La mesa es la de Ordenar páginas. Las hojas no se arrastran ni cambian de lugar.
+
+- Un clic marca una hoja.
+- Ctrl y clic suma o quita esa hoja.
+- Mayús y clic marca desde la última hasta la que tocas.
+- Arrastra en el vacío del centro para marcar varias a la vez.
+- Un clic en el vacío quita la marca.
+- **Preparar PDF** arma un archivo solo con las marcadas, en el orden en que se leen. El documento abierto no cambia.
+- Después pulsa **Descargar**. El archivo se llama con `-extraido`.
+
+## Numerar páginas
+
+Hay dos caminos. Los dos descargan una copia. El PDF abierto no se modifica.
+
+**Automático** pregunta la posición, desde qué página empieza y en qué número. Por defecto es el pie, desde la página 1, empezando en 1, con Arial a 12 pt. El número va en todas las páginas desde esa. No pasa por las otras mesas.
+
+**Asistido** pregunta desde qué página y en qué número. Después ves todas las hojas y puedes quitar el número de algunas: esas páginas igual cuentan en la serie. En Inserción eliges Arial, Times New Roman, Garamond o Georgia, el tamaño, y acomodas el número en la cabecera, el pie, el borde interno o el borde externo. Cabecera y pie se mueven de izquierda a derecha. Los bordes, de arriba a abajo. Interno y externo cambian de lado entre páginas pares e impares. Luego ves todas las páginas con el número puesto y preparas la copia.
+
 ## Deshacer
 
 Ctrl+Z deshace el último cambio. Ctrl+Mayús+Z lo rehace. Vale en Ordenar, Unir y Dividir, porque el historial es del documento.
@@ -73,6 +93,6 @@ En el pie de la barra, la pestaña de la izquierda muestra la versión. Al abrir
 
 ## Lo que todavía no está
 
-Extraer páginas, Numerar páginas, Comprimir, Convertir y Proteger aparecen en la lista, pero aún no se pueden usar.
+Comprimir, Convertir y Proteger aparecen en la lista, pero aún no se pueden usar.
 
 Un PDF con contraseña no se puede abrir.

@@ -77,6 +77,7 @@ interface PageGridProps {
   selectedIds: string[]
   onSelect: (id: string, mode: 'replace' | 'toggle' | 'range') => void
   onReorder: (activeId: string, overId: string) => void
+  movable?: boolean
   thumbAlign?: 'source' | 'order'
   badges?: string[]
   notes?: string[]
@@ -90,6 +91,7 @@ export function PageGrid({
   selectedIds,
   onSelect,
   onReorder,
+  movable = true,
   thumbAlign = 'source',
   badges,
   notes,
@@ -106,6 +108,26 @@ export function PageGrid({
   const active = pages.find((page) => page.id === activeId) ?? null
   const groupCount = active && selected.has(active.id) ? selectedIds.length : active ? 1 : 0
   const grouping = groupCount > 1
+
+  if (!movable) {
+    return (
+      <ol className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${cardWidth}px, 1fr))` }}>
+        {pages.map((page, index) => (
+          <StaticPage
+            key={page.id}
+            page={page}
+            place={index + 1}
+            thumb={thumbs[thumbAlign === 'order' ? index : page.sourceIndex] ?? ''}
+            badge={badges?.[index]}
+            note={notes?.[index]}
+            accent={accents?.[index]}
+            selected={selected.has(page.id)}
+            onSelect={onSelect}
+          />
+        ))}
+      </ol>
+    )
+  }
 
   function onDragStart(event: DragStartEvent) {
     skipClick.current = true
@@ -216,6 +238,43 @@ export function PageGrid({
         ) : null}
       </DragOverlay>
     </DndContext>
+  )
+}
+
+function StaticPage({
+  page,
+  place,
+  thumb,
+  badge,
+  note,
+  accent,
+  selected,
+  onSelect,
+}: {
+  page: PageItem
+  place: number
+  thumb: string
+  badge?: string
+  note?: string
+  accent?: string
+  selected: boolean
+  onSelect: (id: string, mode: 'replace' | 'toggle' | 'range') => void
+}) {
+  return (
+    <li data-id={page.id} data-page={page.sourceIndex + 1} data-place={place} data-selected={selected ? 'true' : 'false'}>
+      <button
+        type="button"
+        className="w-full cursor-pointer rounded-2xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stamp"
+        aria-label={`Página ${page.sourceIndex + 1}, en el lugar ${place}. ${selected ? 'Está marcada. ' : ''}Tócala para marcarla.`}
+        aria-pressed={selected}
+        onClick={(event) => {
+          const mode = event.shiftKey ? 'range' : event.ctrlKey || event.metaKey ? 'toggle' : 'replace'
+          onSelect(page.id, mode)
+        }}
+      >
+        <PageFace page={page} place={place} thumb={thumb} badge={badge} note={note} accent={accent} selected={selected} />
+      </button>
+    </li>
   )
 }
 

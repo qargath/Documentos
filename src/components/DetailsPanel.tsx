@@ -144,6 +144,15 @@ export function DetailsPanel(props: DetailsPanelProps) {
           </section>
           <MergePanel files={props.mergeFiles} onShift={props.onShiftMergeFile} onRemove={props.onRemoveMergeFile} />
         </div>
+      ) : props.tool === 'extraer' ? (
+        <ExtractPanel pages={props.pages} selectedIds={props.selectedIds} pageCount={props.pageCount} />
+      ) : props.tool === 'numerar' ? (
+        <section className="mt-4">
+          <h2 className="text-[11px] font-semibold tracking-[0.12em] text-gold uppercase">Copia numerada</h2>
+          <p className="mt-2 text-sm text-muted">
+            Preparar arma un PDF nuevo. El archivo abierto queda igual.
+          </p>
+        </section>
       ) : current.ready ? (
         <div className="mt-4 flex min-h-0 flex-1 flex-col">
           <section className="shrink-0">
@@ -321,6 +330,85 @@ export function DetailsPanel(props: DetailsPanelProps) {
         </section>
       )}
     </aside>
+  )
+}
+
+function ExtractPanel({
+  pages,
+  selectedIds,
+  pageCount,
+}: {
+  pages: PageItem[]
+  selectedIds: string[]
+  pageCount: number
+}) {
+  const selected = new Set(selectedIds)
+  const marked = pages.filter((page) => selected.has(page.id)).length
+  const [tab, setTab] = useState<PanelTab>('paginas')
+
+  return (
+    <div className="mt-4 flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 gap-3 border-b-[1.5px] border-line" role="tablist" aria-label="Panel">
+        <TabButton active={tab === 'paginas'} label="Páginas" svg={toolIcons.extraer} onClick={() => setTab('paginas')} />
+        <TabButton active={tab === 'atajos'} label="Atajos" svg={atajosIcon} onClick={() => setTab('atajos')} />
+      </div>
+
+      {tab === 'paginas' ? (
+        <div className="mt-3 flex min-h-0 flex-1 flex-col" role="tabpanel">
+          <h3 className="mb-2.5 shrink-0 text-[11px] font-semibold tracking-[0.12em] text-gold uppercase">
+            Selección{marked > 0 ? ` (${marked})` : ''}
+          </h3>
+          {pages.length === 0 ? (
+            <p className="text-sm text-muted">Las páginas se muestran al abrir un PDF.</p>
+          ) : (
+            <ol
+              className="grid min-h-0 flex-1 content-start grid-cols-7 gap-[5px] overflow-y-auto rounded-xl border border-line bg-raise px-2 py-2.5"
+              aria-label="Páginas marcadas para extraer"
+            >
+              {pages.map((page) => (
+                <li
+                  key={page.id}
+                  className={`grid h-8 place-items-center rounded-[7px] border text-[11px] font-medium ${
+                    selected.has(page.id)
+                      ? 'border-stamp bg-stamp font-bold text-white shadow-[0_2px_6px_rgba(194,81,39,0.3)]'
+                      : 'border-line bg-raise text-ink'
+                  }`}
+                >
+                  {page.sourceIndex + 1}
+                </li>
+              ))}
+            </ol>
+          )}
+          <p className="mt-2.5 shrink-0 text-center text-[11px] text-quiet">
+            {marked === 0
+              ? 'Marca en el centro. El archivo original no cambia.'
+              : 'Se exportan en este orden. El archivo original no cambia.'}
+          </p>
+        </div>
+      ) : (
+        <div className="mt-3 min-h-0 flex-1 space-y-3.5 overflow-y-auto pr-1 text-xs text-ink" role="tabpanel">
+          <p className="rounded-[10px] border border-note-line bg-note-bg px-3 py-2.5 text-[11px] leading-snug text-note">
+            {pageCount > 1 ? `${pageCount} páginas. ` : ''}
+            Arrastra en el vacío para marcar un grupo. Las hojas no se mueven.
+          </p>
+          <div>
+            <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-quiet uppercase">Selección de páginas</p>
+            <Shortcut keys={['Clic']} text="Seleccionar una página" />
+            <Shortcut keys={['Ctrl', 'Clic']} text="Sumar o quitar selección" />
+            <Shortcut keys={['Mayús', 'Clic']} text="Marcar un tramo continuo" />
+            <Shortcut text="Selección múltiple en recuadro" note="En el centro" />
+            <Shortcut text="Deseleccionar todo" note="Clic en el centro" />
+          </div>
+          <div>
+            <p className="mb-1.5 text-[10px] font-bold tracking-[0.1em] text-quiet uppercase">Vista</p>
+            <Shortcut keys={['Ctrl', 'Rueda']} text="Tamaño de las hojas, en el centro" />
+          </div>
+          <p className="rounded-[10px] border border-note-line bg-note-bg px-3 py-2.5 text-[11px] leading-snug text-note">
+            Cuando la selección sea la que quieres, presiona Preparar PDF y luego Descargar.
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
 

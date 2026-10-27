@@ -10,7 +10,7 @@ Los bytes del PDF no salen del navegador. No hay cuenta, ni servidor de archivos
 
 El tema claro u oscuro vive en `localStorage` con la clave `documentos-tema`. Cambia los colores de la interfaz. Las hojas, sus miniaturas y el papel de los archivos usan `--color-sheet` y no siguen el tema.
 
-Funciones listas: Ordenar páginas, Dividir, Unir. Aparecen en la barra y aún no hacen nada: Extraer páginas, Numerar páginas, Comprimir, Convertir, Proteger.
+Funciones listas: Ordenar páginas, Dividir, Unir, Extraer páginas, Numerar páginas. Aparecen en la barra y aún no hacen nada: Comprimir, Convertir, Proteger.
 
 ## Cómo correrla
 
@@ -38,7 +38,7 @@ pdf-lib 1.17.1 no cifra ni descifra. Un PDF con contraseña se rechaza con un me
 
 ## Un solo documento
 
-Ordenar, Unir y Dividir leen y escriben el mismo estado (`src/document.ts`). No son tres archivos distintos ni un pipeline de pasos obligatorios.
+Ordenar, Unir, Dividir y Extraer leen el mismo estado (`src/document.ts`). Extraer no escribe el documento: arma un PDF aparte con las páginas marcadas. No son archivos distintos ni un pipeline de pasos obligatorios.
 
 El documento es una lista de archivos de origen y una lista de páginas en orden visual. Cada página sabe de qué archivo sale y cuál es su índice ahí.
 
@@ -56,11 +56,13 @@ El historial guarda hasta 100 acciones, más el paso de origen. Ctrl+Z deshace y
 - Clic reemplaza la selección. Ctrl o Cmd y clic alterna. Mayús y clic marca el tramo.
 - Arrastrar una hoja marcada mueve todo el grupo y conserva el orden relativo. Soltar sobre la hoja tomada no hace nada.
 - Durante un arrastre múltiple, las otras hojas marcadas siguen ocupando su sitio (`visibility`, no `display: none`). Si se ocultan del flujo, el hueco se abre en el lugar equivocado.
-- El recuadro de selección solo nace en la columna central (`main#trabajo`), y solo en Ordenar páginas. Por debajo de 4 px es un clic y limpia la selección, salvo con Ctrl o Mayús. Escape durante el gesto vuelve a la selección inicial.
+- El recuadro de selección solo nace en la columna central (`main#trabajo`), en Ordenar páginas y en Extraer páginas. Por debajo de 4 px es un clic y limpia la selección, salvo con Ctrl o Mayús. Escape durante el gesto vuelve a la selección inicial.
+- Extraer usa la misma grilla, sin arrastre ni botones de lugar. `selectedInOrder` en `src/extract.ts` conserva el orden visual, no el orden de los clics. Preparar no toca el documento. La descarga se llama `nombre-extraido.pdf`.
+- Numerar tampoco modifica el documento. Automático pide posición, página de inicio y número inicial, y numera todas las páginas desde ahí con Arial 12. Asistido puede ocultar el número en algunas páginas sin saltarse la cuenta, luego elige entre Arial, Times New Roman, Garamond y Georgia, acomoda el número y muestra la previa. La copia se llama `nombre-numerado.pdf`. El borde interno y el externo se alternan: en la página impar el externo queda a la derecha.
 - En Dividir, el centro tiene los atajos de partir y el riel. Una cuchilla parte el archivo en ese punto y se puede arrastrar. Cada tramo es un mazo con la primera y la última página; si no caben, se achican, pasan a dos filas y, con muchos tramos, a una ficha de inicio y fin (`src/components/SplitStage.tsx`). Escape quita todos los cortes.
 - Ctrl y la rueda solo cambian el tamaño de las hojas cuando el puntero está sobre esa columna.
 - Los botones de acción son solo icono. El nombre va en el tooltip. Un botón inactivo usa `aria-disabled`, no el atributo `disabled`, para que el tooltip siga apareciendo.
-- Importar desde Ordenar o Dividir sustituye el documento. Importar desde Unir agrega PDF.
+- Importar desde Ordenar, Dividir o Extraer sustituye el documento. Importar desde Unir agrega PDF.
 - El pie de la barra tiene la versión y el tema. La versión abre las notas en la ventana principal, con todas las publicaciones. Escape vuelve a la herramienta.
 
 ## Mapa corto

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { PDFDocument } from 'pdf-lib'
+import { selectedInOrder } from '../src/extract.ts'
+import { edgeSide, placeNumber, planNumbers } from '../src/numbering.ts'
 import { idsInside, marqueeSelection } from '../src/marquee.ts'
 import { moveGroup, placeGroup, stayingBeforeFirst } from '../src/order.ts'
 import { describeSplit, equalCutIndexes, everyCutIndexes, splitParts } from '../src/split.ts'
@@ -59,6 +61,29 @@ assert.deepEqual(idsInside(boxes, { left: 10, top: 0, right: 20, bottom: 10 }), 
 assert.deepEqual(marqueeSelection(['a'], ['b', 'c'], true), ['a', 'b', 'c'])
 assert.deepEqual(marqueeSelection(['a', 'b'], ['b', 'c'], true), ['a', 'b', 'c'])
 assert.deepEqual(marqueeSelection(['a'], ['b'], false), ['b'])
+assert.deepEqual(
+  selectedInOrder(deck, ['6', '2', '4']).map((page) => page.id),
+  ['2', '4', '6'],
+)
+assert.deepEqual(
+  planNumbers(6, 1, 1, new Set()).map((mark) => mark.shown),
+  [1, 2, 3, 4, 5, 6],
+)
+assert.deepEqual(
+  planNumbers(6, 3, 10, new Set([3])).map((mark) => mark.shown),
+  [null, null, 10, null, 12, 13],
+)
+assert.deepEqual(
+  planNumbers(6, 3, 10, new Set([3])).map((mark) => mark.consumed),
+  [null, null, 10, 11, 12, 13],
+)
+assert.equal(edgeSide('externo', 0), 'right')
+assert.equal(edgeSide('externo', 1), 'left')
+assert.equal(edgeSide('interno', 0), 'left')
+assert.equal(edgeSide('interno', 1), 'right')
+assert.deepEqual(placeNumber('pie', 0.5, 0, 612, 792, 20, 12), { x: 296, y: 15 })
+assert.equal(placeNumber('externo', 0, 0, 612, 792, 20, 12).x > 500, true)
+assert.equal(placeNumber('externo', 0, 1, 612, 792, 20, 12).x < 40, true)
 
 const historyPages = (order: number[]): PageItem[] => order.map((sourceIndex) => ({ id: String(sourceIndex), sourceIndex }))
 let history = reducer(initialState, {
